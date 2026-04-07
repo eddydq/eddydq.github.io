@@ -6,7 +6,7 @@
     <title>Paddling Pulse</title>
     <meta
         name="description"
-        content="Paddling Pulse is an open-source, low-power stroke-rate sensor for paddle sports, built around compact hardware and BLE telemetry."
+        content="Paddling Pulse is an open-source hardware project utilizing the DA14531MOD, custom PCB, and embedded C firmware for real-time stroke cadence telemetry via BLE."
     >
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,9 +17,6 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="page-glow page-glow-left" aria-hidden="true"></div>
-    <div class="page-glow page-glow-right" aria-hidden="true"></div>
-
     <header class="site-header">
         <a class="brand" href="#top" aria-label="Paddling Pulse home">
             <img src="assets/logo.svg" alt="Paddling Pulse logo">
@@ -27,37 +24,43 @@
         </a>
 
         <nav class="site-nav" aria-label="Primary">
-            <a href="#overview">Overview</a>
-            <a href="#features">Features</a>
-            <a href="#open-source">Open source</a>
+            <a href="#overview" data-i18n="nav-architecture">Architecture</a>
+            <a href="#features" data-i18n="nav-specs">Technical Specs</a>
+            <a href="#open-source" data-i18n="nav-repo">Repository</a>
+            <a href="flow.html" data-i18n="nav-flow">Flow Builder</a>
+            <div class="lang-toggle">
+                <button class="lang-btn active" data-lang="en">EN</button>
+                <button class="lang-btn" data-lang="fr">FR</button>
+            </div>
         </nav>
     </header>
 
     <main id="top">
         <section class="hero">
             <div class="hero-copy" data-reveal>
-                <p class="eyebrow">Open-source stroke-rate sensor</p>
-                <h1>
-                    Built for
+                <p class="eyebrow" data-i18n="hero-eyebrow">Embedded Hardware & Firmware</p>
+                <h1 data-i18n="hero-h1">
+                    Engineering
                     <span class="hero-accent">clean cadence data</span>
                     on the water.
                 </h1>
-                <p class="hero-text">
-                    Paddling Pulse is a compact hardware project for measuring paddle cadence in
-                    real time across canoe, kayak, rowing, dragon boat, SUP, and related sports.
+                <p class="hero-text" data-i18n="hero-text">
+                    Paddling Pulse is an open-source hardware project centered on the Renesas DA14531MOD. It captures real-time stroke rate using custom PCBs, embedded C firmware, and fixed-point DSP algorithms.
                 </p>
 
                 <div class="hero-actions">
-                    <a class="button button-primary" data-config-link="github" href="#">
-                        View project
+                    <a class="button button-primary" data-config-link="github" href="#" data-i18n="btn-github">
+                        View GitHub Repo
                     </a>
-                    <a class="button button-secondary" href="#overview">See the concept</a>
+                    <a class="button button-secondary" href="#overview" data-i18n="btn-architecture">System Architecture</a>
                 </div>
 
                 <ul class="hero-tags" aria-label="Project highlights">
-                    <li>DA14531MOD</li>
-                    <li>Bluetooth Low Energy</li>
-                    <li>PCB + firmware + CAD</li>
+                    <li>Renesas DA14531MOD</li>
+                    <li>Cortex-M0+</li>
+                    <li>BLE CSCP</li>
+                    <li>Q16.16 DSP Math</li>
+                    <li>Custom PCB</li>
                 </ul>
             </div>
 
@@ -65,10 +68,10 @@
                 <div class="signal-panel">
                     <div class="signal-panel-top">
                         <div>
-                            <p class="panel-label">Session snapshot</p>
+                            <p class="panel-label" data-i18n="panel-label">Telemetry Stream</p>
                             <h2>34 spm</h2>
                         </div>
-                        <span class="panel-chip">BLE live</span>
+                        <span class="panel-chip" data-i18n="panel-chip">CSCP 0x1816</span>
                     </div>
 
                     <div class="signal-wave" aria-hidden="true">
@@ -84,16 +87,16 @@
 
                     <div class="signal-grid">
                         <article>
-                            <p>Low power</p>
-                            <strong>Compact hardware</strong>
+                            <p data-i18n="grid-mcu">MCU</p>
+                            <strong data-i18n="grid-mcu-desc">DA14531MOD Cortex-M0+</strong>
                         </article>
                         <article>
-                            <p>Telemetry</p>
-                            <strong>CSCP-compatible output</strong>
+                            <p data-i18n="grid-protocol">Protocol</p>
+                            <strong data-i18n="grid-protocol-desc">BLE CSCP Profile</strong>
                         </article>
                         <article>
-                            <p>Pipeline</p>
-                            <strong>Stroke detection from IMU data</strong>
+                            <p data-i18n="grid-dsp">DSP Algorithm</p>
+                            <strong data-i18n="grid-dsp-desc">Fixed-Point Autocorrelation</strong>
                         </article>
                     </div>
                 </div>
@@ -106,84 +109,80 @@
 
         <section class="summary-strip" data-reveal>
             <article>
-                <span>Purpose</span>
-                <p>Track stroke rhythm without bulky batteries or closed hardware.</p>
+                <span data-i18n="strip-constraint">Constraint</span>
+                <p data-i18n="strip-constraint-desc">Execute complex DSP algorithms without an FPU on a Cortex-M0+, maintaining extreme low power.</p>
             </article>
             <article>
-                <span>Approach</span>
-                <p>Use efficient embedded hardware and BLE-friendly data output.</p>
+                <span data-i18n="strip-arch">Architecture</span>
+                <p data-i18n="strip-arch-desc">Pivoted from ESP32 to DA14531MOD to drastically reduce battery volume and system footprint.</p>
             </article>
             <article>
-                <span>Audience</span>
-                <p>Makers, coaches, paddlers, and anyone who wants adaptable tooling.</p>
+                <span data-i18n="strip-integration">Integration</span>
+                <p data-i18n="strip-integration-desc">Exposes data via standard BLE Cycling Speed & Cadence Profile (CSCP) for Garmin and Wahoo support.</p>
             </article>
         </section>
 
         <section class="content-section" id="overview">
             <div class="section-heading" data-reveal>
-                <p class="eyebrow">Overview</p>
-                <h2>A simple site for a focused build.</h2>
+                <p class="eyebrow" data-i18n="overview-eyebrow">System Architecture</p>
+                <h2 data-i18n="overview-h2">A complete stack from raw PCB to algorithmic telemetry.</h2>
             </div>
 
             <div class="overview-grid">
                 <article class="copy-card" data-reveal>
-                    <h3>Why this project exists</h3>
-                    <p>
-                        Paddling Pulse is centered on one practical idea: bring live cadence data
-                        to paddle sports with hardware that stays compact, affordable, and open to modify.
+                    <h3 data-i18n="overview-copy-h3">Technical Foundations</h3>
+                    <p data-i18n="overview-copy-p1">
+                        In modern sports, athletic performance relies on high-fidelity data. The challenge was building a sensor that is autonomous, low-cost, and extraordinarily compact.
                     </p>
-                    <p>
-                        The current stack combines a custom board, embedded firmware, and BLE output
-                        so the device can fit naturally into real training sessions.
+                    <p data-i18n="overview-copy-p2">
+                        Initially prototyped on an ESP32, power requirements dictated a battery that compromised form factor. The transition to the Renesas DA14531MOD solved power constraints but required meticulous C firmware design to handle real-time IMU processing without floating-point hardware.
                     </p>
                 </article>
 
                 <article class="sports-card" data-reveal>
-                    <h3>Built around real disciplines</h3>
+                    <h3 data-i18n="overview-sports-h3">Supported IMU Sources</h3>
                     <div class="sports-list">
-                        <span>Canoe</span>
-                        <span>Kayak</span>
-                        <span>Rowing</span>
-                        <span>Dragon boat</span>
-                        <span>SUP</span>
-                        <span>More to adapt</span>
+                        <span>STMicro LIS3DH (I2C)</span>
+                        <span>InvenSense MPU6050 (I2C)</span>
+                        <span>Polar Verity Sense (BLE Central)</span>
                     </div>
+                    <p style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--slate);" data-i18n="overview-sports-note">* Handled via compile-time abstraction layer.</p>
                 </article>
             </div>
         </section>
 
         <section class="content-section" id="features">
             <div class="section-heading" data-reveal>
-                <p class="eyebrow">Features</p>
-                <h2>Enough structure to explain the system without overloading the page.</h2>
+                <p class="eyebrow" data-i18n="features-eyebrow">Technical Specs</p>
+                <h2 data-i18n="features-h2">Firmware engineered for precision and power efficiency.</h2>
             </div>
 
             <div class="feature-grid">
                 <article class="feature-card" data-reveal>
-                    <h3>Compact by design</h3>
-                    <p>
-                        The hardware direction prioritizes autonomy and size so the device remains usable on the boat.
+                    <h3 data-i18n="feat-dsp-h3">Q16.16 Fixed-Point DSP</h3>
+                    <p data-i18n="feat-dsp-p">
+                        Autocorrelation-based period estimation built entirely using Q16.16 fixed-point math to bypass the Cortex-M0+ lack of FPU.
                     </p>
                 </article>
 
                 <article class="feature-card" data-reveal>
-                    <h3>Live stroke-rate output</h3>
-                    <p>
-                        The firmware converts motion data into a cadence signal that can feed BLE-aware tools.
+                    <h3 data-i18n="feat-pipe-h3">Algorithm Pipeline</h3>
+                    <p data-i18n="feat-pipe-p">
+                        Features harmonic rejection to prevent half-rate lockouts, sub-sample parabolic interpolation for precision, and a Kalman filter for cold-start confirmation.
                     </p>
                 </article>
 
                 <article class="feature-card" data-reveal>
-                    <h3>Sensor flexibility</h3>
-                    <p>
-                        The current codebase already supports multiple IMU paths, keeping the project adaptable.
+                    <h3 data-i18n="feat-ble-h3">BLE CSCP Spoofing</h3>
+                    <p data-i18n="feat-ble-p">
+                        Broadcasts real-time paddle stroke rate as "crank cadence" using the BLE Cycling Speed & Cadence Profile (0x1816), enabling instant compatibility with Wahoo, Garmin, and Zwift.
                     </p>
                 </article>
 
                 <article class="feature-card" data-reveal>
-                    <h3>Open build stack</h3>
-                    <p>
-                        Firmware, board work, and supporting tools live together so contributors can follow the full system.
+                    <h3 data-i18n="feat-console-h3">Console & Diagnostics</h3>
+                    <p data-i18n="feat-console-p">
+                        Includes a dedicated console mode (<code>CFG_PADDLING_PULSE_CONSOLE_MODE</code>) exposing a single-wire UART AT command interface for querying cadence, IMU status, and battery.
                     </p>
                 </article>
             </div>
@@ -191,24 +190,23 @@
 
         <section class="content-section" id="open-source">
             <div class="cta-panel" data-reveal>
-                <p class="eyebrow">Open source</p>
-                <h2>Use this page as the starting point, then grow it with logs, docs, and build notes.</h2>
-                <p>
-                    The current template keeps the first release intentionally small: one page, one palette,
-                    one clear message. It is ready for GitHub Pages and easy to extend.
+                <p class="eyebrow" data-i18n="repo-eyebrow">Repository</p>
+                <h2 data-i18n="repo-h2">Explore the C source code, PCB schematics, and algorithmic models.</h2>
+                <p data-i18n="repo-p">
+                    The codebase demonstrates hardware constraints driving algorithmic creativity. Explore the IMU abstraction layer, fixed-point math implementations, and BLE service structuring on GitHub.
                 </p>
                 <div class="hero-actions">
-                    <a class="button button-primary" data-config-link="github" href="#">
-                        Open repository
+                    <a class="button button-primary" data-config-link="github" href="#" data-i18n="btn-source">
+                        View Source Code
                     </a>
-                    <a class="button button-secondary" href="#top">Back to top</a>
+                    <a class="button button-secondary" href="#top" data-i18n="btn-top">Back to top</a>
                 </div>
             </div>
         </section>
     </main>
 
     <footer class="site-footer">
-        <p>Paddling Pulse. Open hardware for cleaner paddling data.</p>
+        <p data-i18n="footer-text">Paddling Pulse. Open hardware for cleaner paddling data.</p>
         <p>&copy; <span id="year"></span></p>
     </footer>
 
