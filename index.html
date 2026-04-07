@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paddling Pulse</title>
+    <meta
+        name="description"
+        content="Paddling Pulse is an open-source, low-power stroke-rate sensor for paddle sports, built around compact hardware and BLE telemetry."
+    >
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Sora:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet"
+    >
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="page-glow page-glow-left" aria-hidden="true"></div>
+    <div class="page-glow page-glow-right" aria-hidden="true"></div>
+
+    <header class="site-header">
+        <a class="brand" href="#top" aria-label="Paddling Pulse home">
+            <img src="assets/logo.svg" alt="Paddling Pulse logo">
+            <span>Paddling Pulse</span>
+        </a>
+
+        <nav class="site-nav" aria-label="Primary">
+            <a href="#overview">Overview</a>
+            <a href="#features">Features</a>
+            <a href="#open-source">Open source</a>
+        </nav>
+    </header>
+
+    <main id="top">
+        <section class="hero">
+            <div class="hero-copy" data-reveal>
+                <p class="eyebrow">Open-source stroke-rate sensor</p>
+                <h1>
+                    Built for
+                    <span class="hero-accent">clean cadence data</span>
+                    on the water.
+                </h1>
+                <p class="hero-text">
+                    Paddling Pulse is a compact hardware project for measuring paddle cadence in
+                    real time across canoe, kayak, rowing, dragon boat, SUP, and related sports.
+                </p>
+
+                <div class="hero-actions">
+                    <a class="button button-primary" data-config-link="github" href="#">
+                        View project
+                    </a>
+                    <a class="button button-secondary" href="#overview">See the concept</a>
+                </div>
+
+                <ul class="hero-tags" aria-label="Project highlights">
+                    <li>DA14531MOD</li>
+                    <li>Bluetooth Low Energy</li>
+                    <li>PCB + firmware + CAD</li>
+                </ul>
+            </div>
+
+            <div class="hero-visual" data-reveal>
+                <div class="signal-panel">
+                    <div class="signal-panel-top">
+                        <div>
+                            <p class="panel-label">Session snapshot</p>
+                            <h2>34 spm</h2>
+                        </div>
+                        <span class="panel-chip">BLE live</span>
+                    </div>
+
+                    <div class="signal-wave" aria-hidden="true">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+
+                    <div class="signal-grid">
+                        <article>
+                            <p>Low power</p>
+                            <strong>Compact hardware</strong>
+                        </article>
+                        <article>
+                            <p>Telemetry</p>
+                            <strong>CSCP-compatible output</strong>
+                        </article>
+                        <article>
+                            <p>Pipeline</p>
+                            <strong>Stroke detection from IMU data</strong>
+                        </article>
+                    </div>
+                </div>
+
+                <div class="floating-logo">
+                    <img src="assets/logo.svg" alt="">
+                </div>
+            </div>
+        </section>
+
+        <section class="summary-strip" data-reveal>
+            <article>
+                <span>Purpose</span>
+                <p>Track stroke rhythm without bulky batteries or closed hardware.</p>
+            </article>
+            <article>
+                <span>Approach</span>
+                <p>Use efficient embedded hardware and BLE-friendly data output.</p>
+            </article>
+            <article>
+                <span>Audience</span>
+                <p>Makers, coaches, paddlers, and anyone who wants adaptable tooling.</p>
+            </article>
+        </section>
+
+        <section class="content-section" id="overview">
+            <div class="section-heading" data-reveal>
+                <p class="eyebrow">Overview</p>
+                <h2>A simple site for a focused build.</h2>
+            </div>
+
+            <div class="overview-grid">
+                <article class="copy-card" data-reveal>
+                    <h3>Why this project exists</h3>
+                    <p>
+                        Paddling Pulse is centered on one practical idea: bring live cadence data
+                        to paddle sports with hardware that stays compact, affordable, and open to modify.
+                    </p>
+                    <p>
+                        The current stack combines a custom board, embedded firmware, and BLE output
+                        so the device can fit naturally into real training sessions.
+                    </p>
+                </article>
+
+                <article class="sports-card" data-reveal>
+                    <h3>Built around real disciplines</h3>
+                    <div class="sports-list">
+                        <span>Canoe</span>
+                        <span>Kayak</span>
+                        <span>Rowing</span>
+                        <span>Dragon boat</span>
+                        <span>SUP</span>
+                        <span>More to adapt</span>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="content-section" id="features">
+            <div class="section-heading" data-reveal>
+                <p class="eyebrow">Features</p>
+                <h2>Enough structure to explain the system without overloading the page.</h2>
+            </div>
+
+            <div class="feature-grid">
+                <article class="feature-card" data-reveal>
+                    <h3>Compact by design</h3>
+                    <p>
+                        The hardware direction prioritizes autonomy and size so the device remains usable on the boat.
+                    </p>
+                </article>
+
+                <article class="feature-card" data-reveal>
+                    <h3>Live stroke-rate output</h3>
+                    <p>
+                        The firmware converts motion data into a cadence signal that can feed BLE-aware tools.
+                    </p>
+                </article>
+
+                <article class="feature-card" data-reveal>
+                    <h3>Sensor flexibility</h3>
+                    <p>
+                        The current codebase already supports multiple IMU paths, keeping the project adaptable.
+                    </p>
+                </article>
+
+                <article class="feature-card" data-reveal>
+                    <h3>Open build stack</h3>
+                    <p>
+                        Firmware, board work, and supporting tools live together so contributors can follow the full system.
+                    </p>
+                </article>
+            </div>
+        </section>
+
+        <section class="content-section" id="open-source">
+            <div class="cta-panel" data-reveal>
+                <p class="eyebrow">Open source</p>
+                <h2>Use this page as the starting point, then grow it with logs, docs, and build notes.</h2>
+                <p>
+                    The current template keeps the first release intentionally small: one page, one palette,
+                    one clear message. It is ready for GitHub Pages and easy to extend.
+                </p>
+                <div class="hero-actions">
+                    <a class="button button-primary" data-config-link="github" href="#">
+                        Open repository
+                    </a>
+                    <a class="button button-secondary" href="#top">Back to top</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <p>Paddling Pulse. Open hardware for cleaner paddling data.</p>
+        <p>&copy; <span id="year"></span></p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
