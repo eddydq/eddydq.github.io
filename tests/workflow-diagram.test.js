@@ -90,6 +90,7 @@ assert.match(imuStateDefinition, /IMU_Close\(\( - \)\):::closeBtn/);
 assert.strictEqual(multiOpenDefinition, buildMainFlowchartDefinition('ble'));
 assert.match(multiOpenDefinition, /BLE_Close\(\( - \)\):::closeBtn/);
 assert.doesNotMatch(multiOpenDefinition, /IMU_Close\(\( - \)\):::closeBtn/);
+assert.deepStrictEqual(collapsedLastLaneState, overviewState);
 assert.strictEqual(collapsedLastLaneDefinition, overviewDefinition);
 
 assert.deepStrictEqual(

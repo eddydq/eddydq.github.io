@@ -90,6 +90,10 @@
                 }
             }
 
+            if (!selectedLane) {
+                return createFlowchartState();
+            }
+
             return createFlowchartState({
                 mode: 'detail',
                 openLanes,
