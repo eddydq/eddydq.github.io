@@ -81,20 +81,36 @@ assert.deepStrictEqual(
     getFlowchartActionFromClassName('node default nodeOverviewImu'),
     { type: 'open-detail', lane: 'imu' }
 );
+assert.deepStrictEqual(
+    getFlowchartActionFromClassName('node default nodeOverviewImu nodeImu'),
+    { type: 'expand', expandedFlow: 'imu' }
+);
 
 assert.deepStrictEqual(
     getFlowchartActionFromClassName('node default nodeLaneBle'),
     { type: 'expand-lane', lane: 'ble' }
+);
+assert.deepStrictEqual(
+    getFlowchartActionFromClassName('node default nodeLaneBle nodeBle'),
+    { type: 'expand', expandedFlow: 'ble' }
 );
 
 assert.deepStrictEqual(
     getFlowchartActionFromClassName('node default laneCloseDsp'),
     { type: 'collapse-lane', lane: 'dsp' }
 );
+assert.deepStrictEqual(
+    getFlowchartActionFromClassName('node default laneCloseDsp closeBtn'),
+    { type: 'collapse' }
+);
 
 assert.deepStrictEqual(
     getFlowchartActionFromClassName('node default detailBack'),
     { type: 'back-overview' }
+);
+assert.deepStrictEqual(
+    getFlowchartActionFromClassName('node default detailBack closeBtn'),
+    { type: 'collapse' }
 );
 
 const overviewDefinition = buildMainFlowchartDefinition();
@@ -123,6 +139,9 @@ assert.match(overviewStoryDefinition, /CSC notifications/);
 assert.match(overviewStoryDefinition, /nodeOverviewImu/);
 assert.match(overviewStoryDefinition, /nodeOverviewDsp/);
 assert.match(overviewStoryDefinition, /nodeOverviewBle/);
+assert.match(overviewStoryDefinition, /nodeImu/);
+assert.match(overviewStoryDefinition, /nodeDsp/);
+assert.match(overviewStoryDefinition, /nodeBle/);
 assert.notStrictEqual(imuStateDefinition, overviewDefinition);
 assert.notStrictEqual(multiOpenDefinition, overviewDefinition);
 assert.strictEqual(imuStateDefinition, buildMainFlowchartDefinition('imu'));
@@ -133,6 +152,10 @@ assert.match(detailBoardDefinition, /subgraph LANE_BLE/);
 assert.match(detailBoardDefinition, /laneCloseImu/);
 assert.match(detailBoardDefinition, /laneCloseBle/);
 assert.doesNotMatch(detailBoardDefinition, /laneCloseDsp/);
+assert.match(detailBoardDefinition, /closeBtn/);
+assert.match(detailBoardDefinition, /detailBack/);
+assert.match(detailBoardDefinition, /nodeLaneDsp/);
+assert.match(detailBoardDefinition, /nodeDsp/);
 assert.match(detailBoardDefinition, /Sample store/);
 assert.match(detailBoardDefinition, /CSC notify/);
 assert.match(detailBoardDefinition, /nodeDspFlow/);
