@@ -10,16 +10,32 @@
     const LANE_KEYS = ['imu', 'dsp', 'ble'];
     const VALID_EXPANDED_FLOWS = new Set(['imu', 'ble', 'dsp']);
     const EXPANDED_SUBGRAPH_DIRECTION = 'TB';
+    const SELECTED_LANE_KEY = '__flowchartSelectedLane';
+
+    function defineSelectedLane(state, selectedLane) {
+        Object.defineProperty(state, SELECTED_LANE_KEY, {
+            value: VALID_EXPANDED_FLOWS.has(selectedLane) ? selectedLane : null,
+            enumerable: false,
+            configurable: true,
+            writable: true
+        });
+
+        return state;
+    }
+
+    function getSelectedLane(state) {
+        return state && state[SELECTED_LANE_KEY];
+    }
 
     function createFlowchartState(overrides = {}) {
-        return {
+        return defineSelectedLane({
             mode: overrides.mode === 'detail' ? 'detail' : 'overview',
             openLanes: {
                 imu: Boolean(overrides.openLanes?.imu),
                 dsp: Boolean(overrides.openLanes?.dsp),
                 ble: Boolean(overrides.openLanes?.ble)
             }
-        };
+        }, overrides[SELECTED_LANE_KEY]);
     }
 
     function transitionFlowchartState(state, action) {
@@ -40,7 +56,8 @@
                     imu: action.lane === 'imu',
                     dsp: action.lane === 'dsp',
                     ble: action.lane === 'ble'
-                }
+                },
+                [SELECTED_LANE_KEY]: action.lane
             });
         }
 
@@ -50,17 +67,33 @@
                 openLanes: {
                     ...current.openLanes,
                     [action.lane]: true
-                }
+                },
+                [SELECTED_LANE_KEY]: action.lane
             });
         }
 
         if (action.type === 'collapse-lane') {
+            const openLanes = {
+                ...current.openLanes,
+                [action.lane]: false
+            };
+            let selectedLane = getSelectedLane(current);
+
+            if (selectedLane === action.lane) {
+                selectedLane = null;
+
+                for (const lane of LANE_KEYS) {
+                    if (openLanes[lane]) {
+                        selectedLane = lane;
+                        break;
+                    }
+                }
+            }
+
             return createFlowchartState({
                 mode: 'detail',
-                openLanes: {
-                    ...current.openLanes,
-                    [action.lane]: false
-                }
+                openLanes,
+                [SELECTED_LANE_KEY]: selectedLane
             });
         }
 
@@ -92,6 +125,14 @@
             return {
                 mode: 'overview',
                 expandedFlow: null
+            };
+        }
+
+        const selectedLane = getSelectedLane(state);
+        if (selectedLane && state.openLanes[selectedLane]) {
+            return {
+                mode: 'detail',
+                expandedFlow: selectedLane
             };
         }
 

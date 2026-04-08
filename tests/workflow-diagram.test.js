@@ -74,6 +74,12 @@ assert.deepStrictEqual(
 const overviewDefinition = buildMainFlowchartDefinition();
 const overviewStateDefinition = buildMainFlowchartDefinition(overviewState);
 const imuStateDefinition = buildMainFlowchartDefinition(detailState);
+const multiOpenDefinition = buildMainFlowchartDefinition(multiOpenState);
+const collapsedLastLaneState = transitionFlowchartState(
+    detailState,
+    { type: 'collapse-lane', lane: 'imu' }
+);
+const collapsedLastLaneDefinition = buildMainFlowchartDefinition(collapsedLastLaneState);
 
 assert.match(overviewDefinition, /nodeImu/);
 assert.match(overviewDefinition, /nodeBle/);
@@ -81,6 +87,10 @@ assert.match(overviewDefinition, /nodeDsp/);
 assert.strictEqual(overviewStateDefinition, overviewDefinition);
 assert.strictEqual(imuStateDefinition, buildMainFlowchartDefinition('imu'));
 assert.match(imuStateDefinition, /IMU_Close\(\( - \)\):::closeBtn/);
+assert.strictEqual(multiOpenDefinition, buildMainFlowchartDefinition('ble'));
+assert.match(multiOpenDefinition, /BLE_Close\(\( - \)\):::closeBtn/);
+assert.doesNotMatch(multiOpenDefinition, /IMU_Close\(\( - \)\):::closeBtn/);
+assert.strictEqual(collapsedLastLaneDefinition, overviewDefinition);
 
 assert.deepStrictEqual(
     getFlowchartActionFromClassName('node default nodeImu'),
