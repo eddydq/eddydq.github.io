@@ -15,8 +15,6 @@
         rel="stylesheet"
     >
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-    <script>mermaid.initialize({ startOnLoad: true, theme: 'base', themeVariables: { primaryColor: '#f3f5f7', primaryBorderColor: '#172b45', primaryTextColor: '#172b45', fontFamily: 'Sora', lineType: 'ortho' } });</script>
 </head>
 <body>
     <header class="site-header">
@@ -167,17 +165,16 @@
 
             <div class="feature-grid feature-grid-single">
                 <article class="copy-card copy-card-centered firmware-flow-card" data-reveal>
-                    <div class="flowchart-shell" id="flowchart-shell">
-                        <div class="flowchart-toolbar">
-                            <button class="flowchart-back-btn" id="flowchart-back-btn" type="button" hidden data-i18n="flowchart-back-btn">Back to overview</button>
-                        </div>
-                        <div class="flowchart-frame" id="flowchart-container">
-                            <div class="mermaid flowchart-stage" id="main-flowchart">
-                            </div>
+                    <div class="simple-flowchart" id="simple-flowchart">
+                        <p class="simple-flow-hint" data-i18n="flowchart-hint">
+                            Click the summarized pipeline block to open the four internal steps.
+                        </p>
+                        <div class="simple-flow-frame">
+                            <div class="simple-flow-track" id="simple-flow-track"></div>
                         </div>
                     </div>
                     <h3 data-i18n="fw-overall-h3">System Flow</h3>
-                    <p data-i18n="fw-overall-p">Main execution loop outlining task scheduling and power management. Click the highlighted nodes above to expand process details.</p>
+                    <p data-i18n="fw-overall-p">Prototype flow: 4 steps by default, with one summarized pipeline step that expands in place into four more internal steps.</p>
                 </article>
             </div>
         </section>
@@ -280,7 +277,7 @@
         <p>&copy; <span id="year"></span></p>
     </footer>
 
-    <script src="workflow-diagram.js"></script>
+    <script src="simple-flowchart.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

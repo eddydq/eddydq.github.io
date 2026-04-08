@@ -6,6 +6,7 @@ $requiredFiles = @(
     "index.html",
     "styles.css",
     "script.js",
+    "simple-flowchart.js",
     "assets/logo.svg"
 )
 
@@ -24,100 +25,84 @@ if ($html -notmatch "Paddling Pulse") {
     throw "Expected the site title to mention Paddling Pulse."
 }
 
-if ($html -notmatch "styles\.css" -or $html -notmatch "script\.js") {
-    throw "Expected index.html to reference styles.css and script.js."
+if ($html -notmatch "styles\.css" -or $html -notmatch "script\.js" -or $html -notmatch "simple-flowchart\.js") {
+    throw "Expected index.html to reference styles.css, simple-flowchart.js, and script.js."
 }
 
 if ($html -notmatch "data-reveal") {
     throw "Expected reveal hooks in the markup."
 }
 
-if ($html -notmatch 'id="flowchart-shell"') {
-    throw "Expected firmware flow shell container in index.html."
+if ($html -match 'mermaid@10' -or $html -match 'workflow-diagram\.js') {
+    throw "Expected the firmware flow prototype to remove Mermaid-specific page dependencies."
 }
 
-if ($html -notmatch 'class="[^"]*\bflowchart-shell\b[^"]*"') {
-    throw "Expected firmware flow shell class hook in index.html."
+if ($html -notmatch 'id="simple-flowchart"') {
+    throw "Expected simple flowchart root container in index.html."
 }
 
-if ($html -notmatch 'id="flowchart-back-btn"') {
-    throw "Expected firmware flow back button in index.html."
+if ($html -notmatch 'id="simple-flow-track"') {
+    throw "Expected simple flowchart track container in index.html."
 }
 
-if ($html -notmatch 'class="[^"]*\bflowchart-toolbar\b[^"]*"' -or $html -notmatch 'class="[^"]*\bflowchart-back-btn\b[^"]*"' -or $html -notmatch 'class="[^"]*\bflowchart-frame\b[^"]*"' -or $html -notmatch 'class="[^"]*\bflowchart-stage\b[^"]*"') {
-    throw "Expected Task 4 firmware flow structural class hooks in index.html."
-}
-
-if ($html -match '<div class="flowchart-shell"[^>]*style=' -or $html -match '<div class="flowchart-frame"[^>]*style=') {
-    throw "Expected firmware flow shell and frame layout to move out of inline HTML styles."
+if ($html -match '<div class="simple-flowchart"[^>]*style=' -or $html -match '<div class="simple-flow-frame"[^>]*style=') {
+    throw "Expected simple flowchart layout to avoid inline styles."
 }
 
 if ($css -notmatch "--navy") {
     throw "Expected a color system in styles.css."
 }
 
-if ($css -notmatch '\.flowchart-shell' -or $css -notmatch '\.flowchart-frame') {
-    throw "Expected firmware flow shell/frame styles in styles.css."
+if ($css -notmatch '\.simple-flowchart' -or $css -notmatch '\.simple-flow-frame') {
+    throw "Expected simple flowchart container styles in styles.css."
 }
 
-if ($css -notmatch '\.flowchart-shell\.is-detail') {
-    throw "Expected detail-state flowchart shell styling in styles.css."
+if ($css -notmatch '\.simple-flow-track' -or $css -notmatch '\.simple-flow-step' -or $css -notmatch '\.simple-flow-arrow') {
+    throw "Expected simple flowchart track, step, and arrow styles in styles.css."
 }
 
-if ($css -match '\.flowchart-frame\s*\{[^}]*overflow:\s*hidden') {
-    throw "Expected firmware flow frame to avoid clipping overflow on narrow screens."
+if ($css -match '\.simple-flow-frame\s*\{[^}]*overflow:\s*hidden') {
+    throw "Expected simple flowchart frame to avoid clipping overflow on narrow screens."
 }
 
-if ($css -notmatch '\.flowchart-frame\s*\{[^}]*overflow:\s*(auto|scroll)' -and $css -notmatch '\.flowchart-stage\s*\{[^}]*overflow:\s*(auto|scroll)') {
-    throw "Expected the firmware flow to provide contained scrolling instead of clipping."
+if ($css -notmatch '\.simple-flow-frame\s*\{[^}]*overflow:\s*(auto|scroll)') {
+    throw "Expected the simple flowchart to provide contained scrolling instead of clipping."
 }
 
-if ($css -notmatch '\.flowchart-stage\s*\{[^}]*transition:\s*[^}]*(opacity|transform)') {
-    throw "Expected transition styling on the firmware flow stage rules."
+if ($css -notmatch '\.simple-flow-step\s*\{[^}]*transition:\s*[^}]*(width|min-width|max-width|transform|opacity)' -or $css -notmatch '\.simple-flow-arrow\s*\{[^}]*transition:\s*[^}]*(width|min-width|transform|opacity)') {
+    throw "Expected transition styling on the simple flowchart step and arrow rules."
 }
 
-if ($css -notmatch '\.flowchart-shell\.is-transitioning\s+\.flowchart-stage') {
-    throw "Expected transitioning flowchart stage styling in styles.css."
+if ($css -notmatch '\.simple-flowchart\.is-expanded') {
+    throw "Expected expanded-state simple flowchart styling in styles.css."
+}
+
+if ($css -notmatch '\.simple-flow-step\.is-detail-reveal' -or $css -notmatch '\.simple-flow-arrow\.is-detail-reveal') {
+    throw "Expected CSS hooks for detail-only simple flowchart steps and arrows."
 }
 
 if ($js -notmatch "IntersectionObserver") {
     throw "Expected script.js to handle reveal animations."
 }
 
-if ($js -notmatch "createFlowchartState" -or $js -notmatch "transitionFlowchartState") {
-    throw "Expected script.js to use the firmware flow state helpers."
+if ($js -notmatch 'let\s+currentLanguage\s*=\s*"en"') {
+    throw "Expected script.js to track the current language for dynamic flowchart labels."
 }
 
-if ($js -match "expandedFlow") {
-    throw "Expected script.js to remove the legacy expandedFlow page state."
+if ($js -notmatch 'syncSimpleFlowchart' -or $js -notmatch 'toggleSimpleFlowchart') {
+    throw "Expected script.js to define simple flowchart sync and toggle helpers."
 }
 
-if ($js -notmatch "classList\.toggle\('is-detail'") {
-    throw "Expected script.js to toggle the flowchart is-detail class."
+if ($js -notmatch 'buildSimpleFlowModel' -or $js -notmatch 'transitionSimpleFlowState') {
+    throw "Expected script.js to use the simple flowchart state helpers."
 }
 
-if ($js -notmatch 'async function rerenderFlowchart') {
-    throw "Expected script.js to define a rerenderFlowchart helper."
+if ($js -match 'mermaid\.run' -or $js -match 'flowchartRenderToken' -or $js -match 'main-flowchart') {
+    throw "Expected script.js to remove Mermaid-specific firmware flow logic."
 }
 
-if ($js -notmatch "classList\.add\('is-transitioning'") {
-    throw "Expected script.js to add the flowchart transitioning class during rerenders."
-}
-
-if ($js -notmatch "classList\.remove\('is-transitioning'") {
-    throw "Expected script.js to remove the flowchart transitioning class after rerenders."
-}
-
-if ($js -notmatch 'let\s+flowchartRenderToken\s*=\s*0') {
-    throw "Expected script.js to track flowchart rerender tokens for overlapping updates."
-}
-
-if ($js -notmatch 'const\s+renderToken\s*=\s*\+\+flowchartRenderToken') {
-    throw "Expected script.js to increment a flowchart rerender token per rerender."
-}
-
-if ($js -notmatch 'if\s*\(\s*renderToken\s*!==\s*flowchartRenderToken\s*\)\s*\{\s*return;\s*\}') {
-    throw "Expected script.js to ignore stale overlapping flowchart rerenders."
+if ($js -notmatch 'data-flow-toggle-step' -or $js -notmatch 'simple-flow-track') {
+    throw "Expected script.js to bind step-based flowchart expansion instead of a separate button."
 }
 
 Write-Host "Static site smoke test passed."

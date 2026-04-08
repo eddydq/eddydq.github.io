@@ -495,65 +495,199 @@ main {
     position: relative;
 }
 
-.flowchart-shell {
+.simple-flowchart {
     width: 100%;
     max-width: 980px;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.65rem;
 }
 
-.flowchart-toolbar {
-    width: 100%;
-    min-height: 2.75rem;
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-}
-
-.flowchart-back-btn {
-    border: 2px solid var(--navy);
-    background: #ffffff;
+.simple-flow-hint {
+    margin: 0;
     color: var(--navy);
-    box-shadow: var(--hard-shadow-sm);
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-align: center;
 }
 
-.flowchart-back-btn:hover,
-.flowchart-back-btn:focus-visible {
-    transform: translate(2px, 2px);
-    box-shadow: 0 0 0 var(--navy);
-}
-
-.flowchart-frame {
+.simple-flow-frame {
     width: 100%;
-    min-height: 520px;
-    padding: 1rem;
+    min-height: 170px;
+    padding: 0.9rem 0.75rem;
     margin-bottom: 1rem;
-    position: relative;
     background: var(--mist);
     border: 2px dashed var(--navy);
     display: flex;
-    align-items: flex-start;
-    justify-content: flex-start;
+    align-items: center;
     overflow: auto;
     overscroll-behavior: contain;
 }
 
-.flowchart-shell.is-detail .flowchart-frame {
-    min-height: 520px;
-}
-
-.flowchart-stage {
-    width: max-content;
+.simple-flow-track {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
     min-width: 100%;
-    opacity: 1;
-    transform: translateY(0);
-    transition: opacity 180ms ease, transform 180ms ease;
+    width: 100%;
+    padding: 0.1rem 0;
 }
 
-.flowchart-shell.is-transitioning .flowchart-stage {
-    opacity: 0.55;
-    transform: translateY(6px);
+.simple-flow-step {
+    width: 6.25rem;
+    min-width: 6.25rem;
+    min-height: 6.25rem;
+    padding: 0.55rem;
+    border: 2px solid var(--navy);
+    box-shadow: var(--hard-shadow-sm);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.35rem;
+    opacity: 1;
+    overflow: hidden;
+    flex: 0 0 auto;
+    transition:
+        width 320ms cubic-bezier(0.22, 1, 0.36, 1),
+        min-width 320ms cubic-bezier(0.22, 1, 0.36, 1),
+        padding 320ms cubic-bezier(0.22, 1, 0.36, 1),
+        margin 320ms cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 180ms ease,
+        transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+        border-width 320ms ease;
+}
+
+.simple-flow-step-core {
+    background: #ffffff;
+}
+
+.simple-flow-step-summary {
+    background: #cfe6ef;
+    cursor: pointer;
+    appearance: none;
+    font: inherit;
+    text-align: left;
+}
+
+.simple-flow-step-summary:hover,
+.simple-flow-step-summary:focus-visible {
+    transform: translateY(-2px);
+}
+
+.simple-flowchart.is-expanded .simple-flow-step-summary {
+    background: #b7d6e2;
+}
+
+.simple-flow-step-detail {
+    background: #dcecf3;
+}
+
+.simple-flow-step.is-detail-reveal.is-hidden {
+    width: 0;
+    min-width: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-width: 0;
+    opacity: 0;
+    transform: translateX(-10px);
+}
+
+.simple-flow-step-index {
+    min-width: 1.7rem;
+    padding: 0.15rem 0.4rem;
+    border: 2px solid var(--navy);
+    background: var(--signal);
+    color: var(--navy);
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+}
+
+.simple-flow-step-label {
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 0.8rem;
+    line-height: 1.25;
+    text-align: left;
+}
+
+.simple-flow-step-chip {
+    align-self: flex-end;
+    padding: 0.12rem 0.35rem;
+    border: 1px solid var(--navy);
+    background: rgba(255, 255, 255, 0.78);
+    color: var(--navy);
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.simple-flowchart.is-expanded .simple-flow-step-chip {
+    background: var(--navy);
+    color: #ffffff;
+}
+
+.simple-flow-arrow {
+    position: relative;
+    width: 1.15rem;
+    min-width: 1.15rem;
+    height: 2px;
+    background: var(--navy);
+    opacity: 1;
+    transform-origin: left center;
+    flex: 0 0 auto;
+    transition:
+        width 320ms cubic-bezier(0.22, 1, 0.36, 1),
+        min-width 320ms cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 180ms ease,
+        transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.simple-flow-arrow.is-detail-reveal.is-hidden {
+    width: 0;
+    min-width: 0;
+    opacity: 0;
+    transform: scaleX(0);
+}
+
+.simple-flow-arrow::after {
+    content: "";
+    position: absolute;
+    right: -1px;
+    top: 50%;
+    width: 0;
+    height: 0;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-left: 7px solid var(--navy);
+    transform: translateY(-50%);
+}
+
+@media (max-width: 700px) {
+    .simple-flow-frame {
+        min-height: 150px;
+        padding-inline: 0.6rem;
+    }
+
+    .simple-flow-step {
+        width: 5.35rem;
+        min-width: 5.35rem;
+        min-height: 5.35rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .simple-flow-step,
+    .simple-flow-arrow {
+        animation: none !important;
+        transition: none !important;
+        transform: none !important;
+        opacity: 1;
+    }
 }
 
 .feature-card h3 {

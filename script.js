@@ -82,7 +82,7 @@ const translations = {
         "fw-arch-eyebrow": "Firmware Architecture",
         "fw-arch-h2": "A complete stack from raw PCB to algorithmic telemetry.",
         "fw-overall-h3": "System Flow",
-        "fw-overall-p": "Main execution loop outlining task scheduling and power management. Click the highlighted nodes above to expand process details.",
+        "fw-overall-p": "Prototype flow: 4 steps by default, with one summarized pipeline step that expands in place into four more internal steps.",
         "fw-imu-h3": "Sensor Integration",
         "fw-imu-p": "Abstracted state machines for I2C and BLE Central sensor acquisition.",
         "fw-cscp-h3": "BLE Initialization",
@@ -90,6 +90,15 @@ const translations = {
         "fw-dsp-h3": "DSP Pipeline",
         "fw-dsp-p": "Q16.16 fixed-point math, low-pass filtering, and autocorrelation period estimation. Test the algorithm interactively in the <a href=\"flow.html\" style=\"text-decoration: underline; color: var(--water-strong);\">Flow Builder</a>.",
         "flowchart-back-btn": "Back to overview",
+        "flowchart-hint": "Click the summarized pipeline block to open the four internal steps.",
+        "flow-step-boot": "Boot firmware",
+        "flow-step-sample": "Acquire samples",
+        "flow-step-pipeline": "Cadence pipeline",
+        "flow-step-window": "Window samples",
+        "flow-step-filter": "Filter signal",
+        "flow-step-detect": "Detect period",
+        "flow-step-smooth": "Smooth cadence",
+        "flow-step-notify": "BLE notify",
         "placeholder-overall-flow": "Overall Flowchart Placeholder",
         "placeholder-imu-flow": "IMU Connection Flowcharts Placeholder (MPU6050, LIS3DH, Polar)",
         "placeholder-cscp-flow": "CSCP Initialization Flowchart Placeholder",
@@ -175,7 +184,7 @@ const translations = {
         "fw-arch-eyebrow": "Architecture Firmware",
         "fw-arch-h2": "Une stack complète, du PCB brut à la télémétrie algorithmique.",
         "fw-overall-h3": "Flux Système",
-        "fw-overall-p": "Boucle d'exécution principale détaillant l'ordonnancement des tâches et la gestion de l'alimentation. Cliquez sur les nœuds mis en évidence ci-dessus pour développer les détails du processus.",
+        "fw-overall-p": "Prototype de flux : 4 étapes par défaut, avec une étape pipeline résumée qui se développe sur place en quatre étapes internes.",
         "fw-imu-h3": "Intégration des Capteurs",
         "fw-imu-p": "Machines à états abstraites pour l'acquisition des capteurs I2C et BLE Central.",
         "fw-cscp-h3": "Initialisation BLE",
@@ -183,6 +192,15 @@ const translations = {
         "fw-dsp-h3": "Pipeline DSP",
         "fw-dsp-p": "Mathématiques à virgule fixe Q16.16, filtrage passe-bas et estimation de période par autocorrélation. Testez l'algorithme de façon interactive dans le <a href=\"flow.html\" style=\"text-decoration: underline; color: var(--water-strong);\">Flow Builder</a>.",
         "flowchart-back-btn": "Retour à la vue d'ensemble",
+        "flowchart-hint": "Cliquez sur le bloc pipeline résumé pour ouvrir les quatre étapes internes.",
+        "flow-step-boot": "Démarrage firmware",
+        "flow-step-sample": "Acquérir les mesures",
+        "flow-step-pipeline": "Pipeline cadence",
+        "flow-step-window": "Fenêtrer les mesures",
+        "flow-step-filter": "Filtrer le signal",
+        "flow-step-detect": "Détecter la période",
+        "flow-step-smooth": "Lisser la cadence",
+        "flow-step-notify": "Notification BLE",
         "placeholder-overall-flow": "Espace Réservé : Diagramme de Flux Global",
         "placeholder-imu-flow": "Espace Réservé : Diagrammes de Connexion IMU (MPU6050, LIS3DH, Polar)",
         "placeholder-cscp-flow": "Espace Réservé : Diagramme d'Initialisation CSCP",
@@ -231,6 +249,7 @@ const translations = {
     }
 };
 
+let currentLanguage = "en";
 const langButtons = document.querySelectorAll(".lang-btn");
 const i18nElements = document.querySelectorAll("[data-i18n]");
 
@@ -247,6 +266,7 @@ function setLanguage(lang) {
     // Update text
     const dict = translations[lang];
     if (!dict) return;
+    currentLanguage = lang;
 
     i18nElements.forEach(el => {
         const key = el.dataset.i18n;
@@ -254,6 +274,8 @@ function setLanguage(lang) {
             el.innerHTML = dict[key];
         }
     });
+
+    syncSimpleFlowchart();
 }
 
 langButtons.forEach(btn => {
@@ -262,107 +284,122 @@ langButtons.forEach(btn => {
     });
 });
 
-// Interactive Mermaid Flowchart Logic
-let flowchartState = null;
-let flowchartRenderToken = 0;
-const workflowDiagram = window.WorkflowDiagram || {};
-const createFlowchartState = workflowDiagram.createFlowchartState;
-const transitionFlowchartState = workflowDiagram.transitionFlowchartState;
-const buildMainFlowchartDefinition = workflowDiagram.buildMainFlowchartDefinition;
-const getFlowchartActionFromClassName = workflowDiagram.getFlowchartActionFromClassName;
+// Simple HTML/CSS Firmware Flowchart Logic
+const simpleFlowchartApi = window.SimpleFlowchart || {};
+const createSimpleFlowState = simpleFlowchartApi.createSimpleFlowState;
+const transitionSimpleFlowState = simpleFlowchartApi.transitionSimpleFlowState;
+const buildSimpleFlowModel = simpleFlowchartApi.buildSimpleFlowModel;
+let simpleFlowchartState = typeof createSimpleFlowState === "function"
+    ? createSimpleFlowState()
+    : { expanded: false };
 
-function syncFlowchartUi() {
-    const shell = document.getElementById('flowchart-shell');
-    const backBtn = document.getElementById('flowchart-back-btn');
-    if (!shell || !backBtn) return;
-
-    shell.classList.toggle('is-detail', flowchartState?.mode === 'detail');
-    backBtn.hidden = flowchartState?.mode !== 'detail';
+function getSimpleFlowTranslation(key) {
+    return translations[currentLanguage]?.[key] || translations.en?.[key] || key;
 }
 
-window.renderMainFlowchart = async function() {
-    const container = document.getElementById('main-flowchart');
-    if (!container) return;
-    if (typeof buildMainFlowchartDefinition !== 'function') return;
+function buildSimpleFlowTrackMarkup(steps) {
+    return steps.map((step, index) => {
+        const stepClasses = [
+            "simple-flow-step",
+            `simple-flow-step-${step.tone}`,
+            step.revealOnExpand ? "is-detail-reveal" : "",
+            step.isExpandable ? "is-expandable" : ""
+        ].filter(Boolean).join(" ");
+        const tagName = step.isExpandable ? "button" : "div";
+        const stepAttributes = step.isExpandable
+            ? 'type="button" data-flow-toggle-step="pipeline"'
+            : "";
+        const chipMarkup = step.isExpandable
+            ? '<span class="simple-flow-step-chip" data-flow-toggle-chip aria-hidden="true"></span>'
+            : "";
+        const arrowClasses = [
+            "simple-flow-arrow",
+            step.revealOnExpand ? "is-detail-reveal" : ""
+        ].filter(Boolean).join(" ");
 
-    if (typeof createFlowchartState === 'function') {
-        flowchartState = createFlowchartState(flowchartState);
-    } else if (!flowchartState) {
-        flowchartState = { mode: 'overview', openLanes: { imu: false, dsp: false, ble: false } };
-    }
-
-    syncFlowchartUi();
-    container.removeAttribute('data-processed');
-    container.innerHTML = buildMainFlowchartDefinition(flowchartState);
-    try {
-        await mermaid.run({
-            querySelector: '#main-flowchart'
-        });
-    } catch(e) {
-        console.error("Mermaid render error", e);
-    }
-};
-
-async function rerenderFlowchart() {
-    const shell = document.getElementById('flowchart-shell');
-    const renderToken = ++flowchartRenderToken;
-    shell?.classList.add('is-transitioning');
-    try {
-        await renderMainFlowchart();
-    } finally {
-        requestAnimationFrame(() => {
-            if (renderToken !== flowchartRenderToken) {
-                return;
-            }
-            shell?.classList.remove('is-transitioning');
-        });
-    }
+        return `
+            <${tagName} class="${stepClasses}" data-step-id="${step.id}" ${stepAttributes}>
+                <span class="simple-flow-step-index" data-step-index="${step.id}">${index + 1}</span>
+                <span class="simple-flow-step-label" data-step-label="${step.id}">${getSimpleFlowTranslation(step.labelKey)}</span>
+                ${chipMarkup}
+            </${tagName}>
+            ${index < steps.length - 1 ? `<span class="${arrowClasses}" data-arrow-after="${step.id}" aria-hidden="true"></span>` : ""}
+        `;
+    }).join("");
 }
 
-document.getElementById('flowchart-back-btn')?.addEventListener('click', function() {
-    if (typeof transitionFlowchartState !== 'function') {
+function ensureSimpleFlowchartStructure(track) {
+    if (!track || track.childElementCount || typeof buildSimpleFlowModel !== "function") {
         return;
     }
 
-    flowchartState = transitionFlowchartState(flowchartState, { type: 'back-overview' });
-    rerenderFlowchart();
-});
+    const model = buildSimpleFlowModel(simpleFlowchartState);
+    track.innerHTML = buildSimpleFlowTrackMarkup(model.steps);
+}
 
-// SVG Click Event Delegation
-document.addEventListener('click', function(e) {
-    const flowchartContainer = document.getElementById('flowchart-container');
-    if (!flowchartContainer || !flowchartContainer.contains(e.target)) {
+function syncSimpleFlowchart() {
+    const root = document.getElementById("simple-flowchart");
+    const track = document.getElementById("simple-flow-track");
+
+    if (!root || !track || typeof buildSimpleFlowModel !== "function") {
         return;
     }
 
-    let target = e.target;
+    ensureSimpleFlowchartStructure(track);
 
-    while (target && target !== document) {
-        if (target.getAttribute) {
-            const action = typeof getFlowchartActionFromClassName === 'function'
-                ? getFlowchartActionFromClassName(target.getAttribute('class') || '')
-                : null;
+    const model = buildSimpleFlowModel(simpleFlowchartState);
+    let visibleOrder = 0;
+    root.classList.toggle("is-expanded", model.expanded);
+    model.steps.forEach(step => {
+        const stepNode = track.querySelector(`[data-step-id="${step.id}"]`);
+        const indexNode = track.querySelector(`[data-step-index="${step.id}"]`);
+        const labelNode = track.querySelector(`[data-step-label="${step.id}"]`);
+        const arrowNode = track.querySelector(`[data-arrow-after="${step.id}"]`);
 
-            if (action?.type === 'navigate') {
-                window.location.href = action.href;
-                return;
-            }
-
-            if (action && typeof transitionFlowchartState === 'function') {
-                flowchartState = transitionFlowchartState(flowchartState, action);
-                rerenderFlowchart();
-                return;
+        if (stepNode) {
+            stepNode.classList.toggle("is-hidden", !step.visible);
+            if (step.isExpandable) {
+                stepNode.setAttribute("aria-expanded", model.expanded ? "true" : "false");
             }
         }
-        target = target.parentNode;
+
+        if (indexNode && step.visible) {
+            visibleOrder += 1;
+            indexNode.textContent = String(visibleOrder);
+        }
+
+        if (labelNode) {
+            labelNode.textContent = getSimpleFlowTranslation(step.labelKey);
+        }
+
+        if (arrowNode) {
+            arrowNode.classList.toggle("is-hidden", Boolean(step.revealOnExpand && !model.expanded));
+        }
+    });
+
+    const toggleChip = track.querySelector("[data-flow-toggle-chip]");
+    if (toggleChip) {
+        toggleChip.textContent = model.expanded ? "-" : "+4";
     }
-});
+}
+
+function toggleSimpleFlowchart(stepId = "pipeline") {
+    if (typeof transitionSimpleFlowState !== "function") {
+        return;
+    }
+
+    simpleFlowchartState = transitionSimpleFlowState(simpleFlowchartState, { type: "toggle-step", stepId });
+    syncSimpleFlowchart();
+}
 
 document.addEventListener("DOMContentLoaded", () => {
-    if (document.getElementById('main-flowchart')) {
-        if (typeof createFlowchartState === 'function') {
-            flowchartState = createFlowchartState();
+    syncSimpleFlowchart();
+    document.getElementById("simple-flow-track")?.addEventListener("click", event => {
+        const toggleStep = event.target.closest("[data-flow-toggle-step]");
+        if (!toggleStep) {
+            return;
         }
-        renderMainFlowchart();
-    }
+
+        toggleSimpleFlowchart(toggleStep.getAttribute("data-flow-toggle-step"));
+    });
 });
