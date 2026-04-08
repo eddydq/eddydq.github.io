@@ -108,6 +108,14 @@
         return current;
     }
 
+    function isLegacyFlowchartRenderInput(viewStateOrExpandedFlow) {
+        return (
+            viewStateOrExpandedFlow === null ||
+            typeof viewStateOrExpandedFlow === 'undefined' ||
+            typeof viewStateOrExpandedFlow === 'string'
+        );
+    }
+
     function normalizeFlowchartRenderState(viewStateOrExpandedFlow) {
         if (
             viewStateOrExpandedFlow === null ||
@@ -135,7 +143,7 @@
         return createFlowchartState(viewStateOrExpandedFlow);
     }
 
-    function buildOverviewDefinition() {
+    function buildOverviewDefinition(useLegacyClasses) {
         return [
             'graph LR;',
             'Boot([Boot]):::overviewNode --> Adv([BLE advertise]):::overviewNode;',
@@ -145,20 +153,32 @@
             'Imu --> Dsp([Stroke estimate]);',
             'Dsp --> Ble([BLE cadence out]);',
             'Ble -. restart .-> Adv;',
-            'class Imu nodeOverviewImu,nodeImu;',
-            'class Dsp nodeOverviewDsp,nodeDsp;',
-            'class Ble nodeOverviewBle,nodeBle;',
+            useLegacyClasses
+                ? 'class Imu nodeOverviewImu,nodeImu;'
+                : 'class Imu nodeOverviewImu;',
+            useLegacyClasses
+                ? 'class Dsp nodeOverviewDsp,nodeDsp;'
+                : 'class Dsp nodeOverviewDsp;',
+            useLegacyClasses
+                ? 'class Ble nodeOverviewBle,nodeBle;'
+                : 'class Ble nodeOverviewBle;',
             'classDef overviewNode fill:#f3f5f7,stroke:#172b45,stroke-width:2px,color:#122133;',
-            'classDef nodeImu fill:#7caec2,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;',
-            'classDef nodeDsp fill:#4f8ea8,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;',
-            'classDef nodeBle fill:#b8d6c3,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;',
+            useLegacyClasses
+                ? 'classDef nodeImu fill:#7caec2,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;'
+                : null,
+            useLegacyClasses
+                ? 'classDef nodeDsp fill:#4f8ea8,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;'
+                : null,
+            useLegacyClasses
+                ? 'classDef nodeBle fill:#b8d6c3,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;'
+                : null,
             'classDef nodeOverviewImu fill:#7caec2,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;',
             'classDef nodeOverviewDsp fill:#4f8ea8,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;',
             'classDef nodeOverviewBle fill:#b8d6c3,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;'
-        ].join('\n');
+        ].filter(Boolean).join('\n');
     }
 
-    function buildDetailDefinition(state) {
+    function buildDetailDefinition(state, useLegacyClasses) {
         const { openLanes } = createFlowchartState(state);
         const imuEntryNode = openLanes.imu ? 'ImuSelect' : 'ImuCompact';
         const imuOutputNode = openLanes.imu ? 'ImuPush' : 'ImuCompact';
@@ -168,18 +188,32 @@
         const bleTickNode = openLanes.ble ? 'BleTick' : 'BleCompact';
         const bleOutputNode = openLanes.ble ? 'BleSend' : 'BleCompact';
         const imuLane = openLanes.imu
-            ? 'ImuClose([ - ]); ImuSelect([Compile-time source]); ImuInit([Driver init]); ImuRun([Acquire samples]); ImuPush([Push to sample store]); ImuClose --> ImuSelect --> ImuInit --> ImuRun --> ImuPush;'
-            : 'ImuCompact([Sensor input]);';
+            ? useLegacyClasses
+                ? 'ImuClose([ - ]):::closeBtn; ImuSelect([Compile-time source]); ImuInit([Driver init]); ImuRun([Acquire samples]); ImuPush([Push to sample store]); ImuClose --> ImuSelect --> ImuInit --> ImuRun --> ImuPush;'
+                : 'ImuClose([ - ]):::laneCloseImu; ImuSelect([Compile-time source]); ImuInit([Driver init]); ImuRun([Acquire samples]); ImuPush([Push to sample store]); ImuClose --> ImuSelect --> ImuInit --> ImuRun --> ImuPush;'
+            : useLegacyClasses
+                ? 'ImuCompact([Sensor input]):::nodeImu;'
+                : 'ImuCompact([Sensor input]):::nodeLaneImu;';
         const dspLane = openLanes.dsp
-            ? 'DspClose([ - ]); DspStore([Sample store]); DspAuto([Autocorrelation]); DspGuard([Confidence + harmonic guard]); DspKalman([Kalman smoothing]); DspOut([Cadence RPM / Flow Builder]):::nodeDspFlow; DspClose --> DspStore --> DspAuto --> DspGuard --> DspKalman --> DspOut;'
-            : 'DspCompact([Stroke estimate]); DspStore([Sample store]); DspCompact -. expand .-> DspStore; DspStore --> DspOut([Cadence RPM / Flow Builder]):::nodeDspFlow;';
+            ? useLegacyClasses
+                ? 'DspClose([ - ]):::closeBtn; DspStore([Sample store]); DspAuto([Autocorrelation]); DspGuard([Confidence + harmonic guard]); DspKalman([Kalman smoothing]); DspOut([Cadence RPM / Flow Builder]):::nodeDspFlow; DspClose --> DspStore --> DspAuto --> DspGuard --> DspKalman --> DspOut;'
+                : 'DspClose([ - ]):::laneCloseDsp; DspStore([Sample store]); DspAuto([Autocorrelation]); DspGuard([Confidence + harmonic guard]); DspKalman([Kalman smoothing]); DspOut([Cadence RPM / Flow Builder]):::nodeDspFlow; DspClose --> DspStore --> DspAuto --> DspGuard --> DspKalman --> DspOut;'
+            : useLegacyClasses
+                ? 'DspCompact([Stroke estimate]):::nodeDsp; DspStore([Sample store]); DspCompact -. expand .-> DspStore; DspStore --> DspOut([Cadence RPM / Flow Builder]):::nodeDspFlow;'
+                : 'DspCompact([Stroke estimate]):::nodeLaneDsp; DspStore([Sample store]); DspCompact -. expand .-> DspStore; DspStore --> DspOut([Cadence RPM / Flow Builder]):::nodeDspFlow;';
         const bleLane = openLanes.ble
-            ? 'BleClose([ - ]); BleAdv([BLE advertise]); BleConn([Client connects]); BleGate([CSC notifications enabled]); BleStart([pipeline_start()]); BleTick([CSC measurement timer]); BleSend([CSC notify]); BleClose --> BleAdv --> BleConn --> BleGate --> BleStart --> BleTick --> BleSend;'
-            : 'BleCompact([BLE cadence out]);';
+            ? useLegacyClasses
+                ? 'BleClose([ - ]):::closeBtn; BleAdv([BLE advertise]); BleConn([Client connects]); BleGate([CSC notifications enabled]); BleStart([pipeline_start()]); BleTick([CSC measurement timer]); BleSend([CSC notify]); BleClose --> BleAdv --> BleConn --> BleGate --> BleStart --> BleTick --> BleSend;'
+                : 'BleClose([ - ]):::laneCloseBle; BleAdv([BLE advertise]); BleConn([Client connects]); BleGate([CSC notifications enabled]); BleStart([pipeline_start()]); BleTick([CSC measurement timer]); BleSend([CSC notify]); BleClose --> BleAdv --> BleConn --> BleGate --> BleStart --> BleTick --> BleSend;'
+            : useLegacyClasses
+                ? 'BleCompact([BLE cadence out]):::nodeBle;'
+                : 'BleCompact([BLE cadence out]):::nodeLaneBle;';
 
         const lines = [
             'graph LR;',
-            'Back([Back]);',
+            useLegacyClasses
+                ? 'Back([Back]):::closeBtn;'
+                : 'Back([Back]):::detailBack;',
             'subgraph LANE_IMU [Sensor / IMU]',
             imuLane,
             'end',
@@ -195,58 +229,44 @@
             `${imuOutputNode} -. samples .-> DspStore;`,
             `${dspOutputNode} -. cadence .-> ${bleTickNode};`,
             `${bleOutputNode} -. stop/restart .-> ${bleEntryNode};`,
-            'class Back detailBack,closeBtn;',
-            'class DspOut nodeDspFlow;',
             'classDef detailBack fill:#f3f5f7,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;',
             'classDef nodeLaneImu fill:#7caec2,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;',
             'classDef nodeLaneDsp fill:#4f8ea8,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;',
             'classDef nodeLaneBle fill:#b8d6c3,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;',
-            'classDef nodeImu fill:#7caec2,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;',
-            'classDef nodeDsp fill:#4f8ea8,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;',
-            'classDef nodeBle fill:#b8d6c3,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;',
-            'classDef closeBtn fill:#e11d48,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;',
+            useLegacyClasses
+                ? 'classDef nodeImu fill:#7caec2,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;'
+                : null,
+            useLegacyClasses
+                ? 'classDef nodeDsp fill:#4f8ea8,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;'
+                : null,
+            useLegacyClasses
+                ? 'classDef nodeBle fill:#b8d6c3,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;'
+                : null,
+            useLegacyClasses
+                ? 'classDef closeBtn fill:#e11d48,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;'
+                : null,
+            !useLegacyClasses && openLanes.imu
+                ? 'classDef laneCloseImu fill:#e11d48,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;'
+                : null,
+            !useLegacyClasses && openLanes.dsp
+                ? 'classDef laneCloseDsp fill:#e11d48,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;'
+                : null,
+            !useLegacyClasses && openLanes.ble
+                ? 'classDef laneCloseBle fill:#e11d48,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;'
+                : null,
             'classDef nodeDspFlow fill:#4f8ea8,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;'
         ];
 
-        if (openLanes.imu) {
-            lines.push('class ImuClose laneCloseImu,closeBtn;');
-        } else {
-            lines.push('class ImuCompact nodeLaneImu,nodeImu;');
-        }
-
-        if (openLanes.dsp) {
-            lines.push('class DspClose laneCloseDsp,closeBtn;');
-        } else {
-            lines.push('class DspCompact nodeLaneDsp,nodeDsp;');
-        }
-
-        if (openLanes.ble) {
-            lines.push('class BleClose laneCloseBle,closeBtn;');
-        } else {
-            lines.push('class BleCompact nodeLaneBle,nodeBle;');
-        }
-
-        if (openLanes.imu) {
-            lines.push('classDef laneCloseImu fill:#e11d48,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;');
-        }
-
-        if (openLanes.dsp) {
-            lines.push('classDef laneCloseDsp fill:#e11d48,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;');
-        }
-
-        if (openLanes.ble) {
-            lines.push('classDef laneCloseBle fill:#e11d48,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;');
-        }
-
-        return lines.join('\n');
+        return lines.filter(Boolean).join('\n');
     }
 
     function buildMainFlowchartDefinition(viewStateOrExpandedFlow) {
         const state = normalizeFlowchartRenderState(viewStateOrExpandedFlow);
+        const useLegacyClasses = isLegacyFlowchartRenderInput(viewStateOrExpandedFlow);
 
         return state.mode === 'detail'
-            ? buildDetailDefinition(state)
-            : buildOverviewDefinition();
+            ? buildDetailDefinition(state, useLegacyClasses)
+            : buildOverviewDefinition(useLegacyClasses);
     }
 
     function hasClassToken(className, token) {

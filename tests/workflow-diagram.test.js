@@ -57,7 +57,13 @@ assert.deepStrictEqual(plainMultiOpenCollapse, {
     mode: 'detail',
     openLanes: { imu: false, dsp: false, ble: true }
 });
-assert.strictEqual(buildMainFlowchartDefinition(plainMultiOpenCollapse), buildMainFlowchartDefinition('ble'));
+assert.strictEqual(
+    buildMainFlowchartDefinition(plainMultiOpenCollapse),
+    buildMainFlowchartDefinition(createFlowchartState({
+        mode: 'detail',
+        openLanes: { imu: false, dsp: false, ble: true }
+    }))
+);
 
 const collapsedState = transitionFlowchartState(
     multiOpenState,
@@ -81,27 +87,15 @@ assert.deepStrictEqual(
     getFlowchartActionFromClassName('node default nodeOverviewImu'),
     { type: 'open-detail', lane: 'imu' }
 );
-assert.deepStrictEqual(
-    getFlowchartActionFromClassName('node default nodeOverviewImu nodeImu'),
-    { type: 'expand', expandedFlow: 'imu' }
-);
 
 assert.deepStrictEqual(
     getFlowchartActionFromClassName('node default nodeLaneBle'),
     { type: 'expand-lane', lane: 'ble' }
 );
-assert.deepStrictEqual(
-    getFlowchartActionFromClassName('node default nodeLaneBle nodeBle'),
-    { type: 'expand', expandedFlow: 'ble' }
-);
 
 assert.deepStrictEqual(
     getFlowchartActionFromClassName('node default laneCloseDsp'),
     { type: 'collapse-lane', lane: 'dsp' }
-);
-assert.deepStrictEqual(
-    getFlowchartActionFromClassName('node default laneCloseDsp closeBtn'),
-    { type: 'collapse' }
 );
 
 assert.deepStrictEqual(
@@ -109,8 +103,8 @@ assert.deepStrictEqual(
     { type: 'back-overview' }
 );
 assert.deepStrictEqual(
-    getFlowchartActionFromClassName('node default detailBack closeBtn'),
-    { type: 'collapse' }
+    getFlowchartActionFromClassName('node default nodeDspFlow'),
+    { type: 'navigate', href: 'flow.html' }
 );
 
 const overviewDefinition = buildMainFlowchartDefinition();
@@ -118,6 +112,7 @@ const overviewStateDefinition = buildMainFlowchartDefinition(overviewState);
 const imuStateDefinition = buildMainFlowchartDefinition(detailState);
 const multiOpenDefinition = buildMainFlowchartDefinition(multiOpenState);
 const overviewStoryDefinition = buildMainFlowchartDefinition(createFlowchartState());
+const legacyImuDefinition = buildMainFlowchartDefinition('imu');
 const detailBoardDefinition = buildMainFlowchartDefinition(createFlowchartState({
     mode: 'detail',
     openLanes: { imu: true, dsp: false, ble: true }
@@ -131,37 +126,48 @@ const collapsedLastLaneDefinition = buildMainFlowchartDefinition(collapsedLastLa
 assert.match(overviewDefinition, /nodeOverviewImu/);
 assert.match(overviewDefinition, /nodeOverviewBle/);
 assert.match(overviewDefinition, /nodeOverviewDsp/);
-assert.strictEqual(overviewStateDefinition, overviewDefinition);
+assert.match(overviewDefinition, /nodeImu/);
+assert.match(overviewDefinition, /nodeDsp/);
+assert.match(overviewDefinition, /nodeBle/);
+assert.notStrictEqual(overviewStateDefinition, overviewDefinition);
 assert.match(overviewStoryDefinition, /graph LR;/);
 assert.match(overviewStoryDefinition, /Boot/);
 assert.match(overviewStoryDefinition, /BLE advertise/);
+assert.match(overviewStoryDefinition, /Client connects/);
 assert.match(overviewStoryDefinition, /CSC notifications/);
+assert.match(overviewStoryDefinition, /Sensor input/);
+assert.match(overviewStoryDefinition, /Stroke estimate/);
+assert.match(overviewStoryDefinition, /BLE cadence out/);
 assert.match(overviewStoryDefinition, /nodeOverviewImu/);
 assert.match(overviewStoryDefinition, /nodeOverviewDsp/);
 assert.match(overviewStoryDefinition, /nodeOverviewBle/);
-assert.match(overviewStoryDefinition, /nodeImu/);
-assert.match(overviewStoryDefinition, /nodeDsp/);
-assert.match(overviewStoryDefinition, /nodeBle/);
+assert.doesNotMatch(overviewStoryDefinition, /\bnodeImu\b/);
+assert.doesNotMatch(overviewStoryDefinition, /\bnodeDsp\b/);
+assert.doesNotMatch(overviewStoryDefinition, /\bnodeBle\b/);
 assert.notStrictEqual(imuStateDefinition, overviewDefinition);
 assert.notStrictEqual(multiOpenDefinition, overviewDefinition);
-assert.strictEqual(imuStateDefinition, buildMainFlowchartDefinition('imu'));
 assert.notStrictEqual(multiOpenDefinition, buildMainFlowchartDefinition('ble'));
+assert.match(legacyImuDefinition, /closeBtn/);
+assert.match(legacyImuDefinition, /nodeDsp/);
+assert.match(legacyImuDefinition, /nodeBle/);
 assert.match(detailBoardDefinition, /subgraph LANE_IMU/);
 assert.match(detailBoardDefinition, /subgraph LANE_DSP/);
 assert.match(detailBoardDefinition, /subgraph LANE_BLE/);
 assert.match(detailBoardDefinition, /laneCloseImu/);
 assert.match(detailBoardDefinition, /laneCloseBle/);
 assert.doesNotMatch(detailBoardDefinition, /laneCloseDsp/);
-assert.match(detailBoardDefinition, /closeBtn/);
 assert.match(detailBoardDefinition, /detailBack/);
 assert.match(detailBoardDefinition, /nodeLaneDsp/);
-assert.match(detailBoardDefinition, /nodeDsp/);
+assert.doesNotMatch(detailBoardDefinition, /closeBtn/);
+assert.doesNotMatch(detailBoardDefinition, /\bnodeImu\b/);
+assert.doesNotMatch(detailBoardDefinition, /\bnodeDsp\b/);
+assert.doesNotMatch(detailBoardDefinition, /\bnodeBle\b/);
 assert.match(detailBoardDefinition, /Sample store/);
 assert.match(detailBoardDefinition, /CSC notify/);
 assert.match(detailBoardDefinition, /nodeDspFlow/);
 assert.doesNotMatch(detailBoardDefinition, /\bdirection TD\b/);
 assert.deepStrictEqual(collapsedLastLaneState, overviewState);
-assert.strictEqual(collapsedLastLaneDefinition, overviewDefinition);
+assert.strictEqual(collapsedLastLaneDefinition, overviewStateDefinition);
 
 assert.deepStrictEqual(
     getFlowchartActionFromClassName('node default nodeImu'),
