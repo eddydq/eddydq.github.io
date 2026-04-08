@@ -15,6 +15,10 @@
 - `node` is already available in this workspace.
 - `python` and `pytest` are already available in this workspace.
 - Install Emscripten and place `emcc` on `PATH` before executing Tasks 2 through 8. The build scripts below must fail clearly when `emcc` is unavailable and the tests must skip with a clear reason instead of crashing.
+- Module-system rule for this plan:
+  - hand-written repository `.js` files stay CommonJS/UMD-compatible so the existing `node` tests can `require(...)` them
+  - generated Emscripten outputs use `.mjs` and are only executed as entry scripts via `node file.mjs` or imported from other `.mjs` files
+  - do not add a repo-level `package.json` with `"type": "module"` as part of this work
 
 ## File Map
 
@@ -1452,7 +1456,99 @@ if ($Target -eq 'runtime-node') {
 }
 ```
 
-Update `analysis/wasm/pp_runtime_node_smoke.c` so the `vertical-slice` CLI mode emits the runtime outputs as JSON by calling `pp_runtime_run(...)` with an output buffer and serializing the `final` binding.
+Replace `analysis/wasm/pp_runtime_node_smoke.c` with:
+
+```c
+#include <stdio.h>
+#include <string.h>
+
+#include "../c_api/pp_runtime.h"
+
+static void write_vertical_slice_json(void) {
+    pp_node_t nodes[] = {
+        { "n1", "representation.select_axis", "{\"axis\":\"y\"}" },
+        { "n2", "estimation.autocorrelation", "{\"min_lag_samples\":10,\"max_lag_samples\":80}" },
+        { "n3", "validation.spm_range_gate", "{\"min_spm\":20.0,\"max_spm\":120.0}" },
+        { "n4", "suivi.kalman_2d", "{\"process_noise\":1.0,\"measurement_noise\":10.0}" }
+    };
+    pp_connection_t connections[] = {
+        { "input.raw", "n1.source" },
+        { "n1.primary", "n2.source" },
+        { "n2.primary", "n3.source" },
+        { "n3.accepted", "n4.source" }
+    };
+    pp_output_binding_t outputs[] = {
+        { "final", "n4.primary" }
+    };
+    pp_graph_t graph = { 2, nodes, 4, connections, 4, outputs, 1 };
+    pp_packet_t input_packets[1] = {0};
+    pp_runtime_output_packet_t output_packets[4] = {0};
+    size_t output_count = 0;
+    pp_runtime_result_t result;
+    size_t i = 0;
+
+    input_packets[0].kind = PP_PACKET_RAW_WINDOW;
+    input_packets[0].payload.raw_window.sample_rate_hz = 52.0f;
+    input_packets[0].payload.raw_window.length = 64;
+    for (i = 0; i < 64; i += 1) {
+        input_packets[0].payload.raw_window.x[i] = 0.0f;
+        input_packets[0].payload.raw_window.y[i] = (i % 4 == 1) ? 1.0f : ((i % 4 == 3) ? -1.0f : 0.0f);
+        input_packets[0].payload.raw_window.z[i] = 0.0f;
+    }
+
+    result = pp_runtime_run(&graph, input_packets, 1, output_packets, 4, &output_count);
+    if (result.status != PP_RUNTIME_OK || output_count == 0) {
+        printf("{\"error\":\"%s\"}\n", result.message);
+        return;
+    }
+
+    printf(
+        "{\"outputs\":{\"final\":[{\"kind\":\"estimate\",\"data\":{\"spm\":%.6f}}]},\"diagnostics\":{\"engine\":\"runtime-node\"}}\n",
+        output_packets[0].packet.payload.estimate.spm
+    );
+}
+
+int main(int argc, char **argv) {
+    if (argc > 1 && strcmp(argv[1], "vertical-slice") == 0) {
+        write_vertical_slice_json();
+        return 0;
+    }
+
+    {
+        pp_node_t nodes[] = {
+            { "n1", "test.inline", "{}" },
+            { "n2", "test.inline", "{}" }
+        };
+        pp_connection_t ok_connections[] = {
+            { "input.raw", "n1.source" },
+            { "n1.primary", "n2.source" }
+        };
+        pp_connection_t cycle_connections[] = {
+            { "n1.primary", "n2.source" },
+            { "n2.primary", "n1.source" }
+        };
+        pp_output_binding_t outputs[] = {
+            { "final", "n2.primary" }
+        };
+        pp_graph_t ok_graph = { 2, nodes, 2, ok_connections, 2, outputs, 1 };
+        pp_graph_t cycle_graph = { 2, nodes, 2, cycle_connections, 2, outputs, 1 };
+        pp_packet_t input = { PP_PACKET_RAW_WINDOW };
+        pp_runtime_output_packet_t output_packets[4] = {0};
+        size_t output_count = 0;
+        size_t order[8] = {0};
+        pp_runtime_result_t ok_validate = pp_graph_validate(&ok_graph);
+        pp_runtime_result_t cycle_validate = pp_graph_build_schedule(&cycle_graph, order, 8);
+        pp_runtime_result_t run_result = pp_runtime_run(&ok_graph, &input, 1, output_packets, 4, &output_count);
+
+        printf("{\"validate_ok\":%s,\"cycle_detected\":%s,\"state_ok\":%s}\n",
+            ok_validate.status == PP_RUNTIME_OK ? "true" : "false",
+            cycle_validate.status == PP_RUNTIME_INVALID_GRAPH ? "true" : "false",
+            run_result.status == PP_RUNTIME_OK && output_count == 0 ? "true" : "false");
+    }
+
+    return 0;
+}
+```
 
 - [ ] **Step 4: Run the parity test to verify it passes or skips**
 
