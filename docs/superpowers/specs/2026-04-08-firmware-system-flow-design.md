@@ -47,17 +47,27 @@ Design rules:
 
 ### Expanded Diagram Behavior
 
-Clicking an interactive node replaces the main diagram in the same card.
+Clicking an interactive node replaces the main diagram in the same card with a detail board.
 
-Each expanded view should show three side-by-side lanes:
+The detail board should always show three side-by-side lanes:
 
 1. `Sensor / IMU`
 2. `DSP / Stroke Rate`
 3. `BLE / CSCP`
 
-The clicked lane becomes the focus lane with more steps. The other two lanes stay compact so the user keeps system context.
+The clicked lane becomes expanded first, but the user must also be able to open the other lanes without leaving the detail board. Expanded state is per-lane rather than single-selection.
 
-The expanded views should include a visible close/back control that returns to the main overview.
+This creates two interaction levels:
+
+- overview mode: compact story diagram
+- detail mode: three-lane board where any combination of lanes can be expanded at the same time
+
+The detail board should include:
+
+- a global back control that returns to the main overview
+- a small `-` close control on each expanded lane that collapses only that lane back to its compact contextual form
+
+If all expanded lanes are collapsed, the detail board may remain visible until the user uses the global back control. The back control is the only action that restores the overview.
 
 ## Lane Content
 
@@ -115,6 +125,7 @@ Keep connection parameter update and manufacturer-data refresh out of the diagra
 - Main overview should be laid out primarily left-to-right.
 - Expanded views should use a stable three-lane layout that reads as parallel responsibilities.
 - The focused lane may be taller than the supporting lanes, but widths should stay balanced.
+- Multiple expanded lanes must remain readable together without forcing the board to change overall width.
 
 ### Node Style
 
@@ -128,16 +139,30 @@ Keep connection parameter update and manufacturer-data refresh out of the diagra
 
 The current card feels awkward because Mermaid is allowed to produce uneven node sizing and cramped layouts. The redesign should:
 
-- increase the diagram container height for expanded states
-- keep the overview more compact than the detail views
+- use a fixed diagram card footprint for both overview and detail modes
+- keep the board height stable when lanes are opened or collapsed
 - avoid large multiline labels
 - avoid deeply nested subgraphs
 - prefer lane grouping over long vertical chains
 
+The page around the diagram should not jump when the user interacts with the flow. Expansion should happen inside the existing card bounds rather than resizing the section.
+
+### Motion
+
+The interaction should feel smooth but restrained.
+
+- opening a lane should animate inside the card rather than hard-swapping to a visibly different size
+- collapsing a lane with the small `-` control should smoothly return that lane to its compact form
+- transitions should emphasize continuity of the three-lane board, not redraw shock
+
+If Mermaid re-rendering makes perfect continuity impossible, the implementation should still preserve a stable container size and minimize visual snapping.
+
 ## Interaction Rules
 
 - Clicking a highlighted node replaces the overview with its detail view.
-- Clicking the close control restores the overview.
+- Once in detail mode, the user can expand multiple lanes at the same time.
+- Clicking a lane-level small `-` control collapses only that lane.
+- Clicking the global back control restores the overview.
 - Clicking the DSP output action inside the DSP detail view still navigates to `flow.html`.
 - Only clicks inside the firmware system flow card should affect the diagram.
 
