@@ -9,7 +9,6 @@
 }(typeof globalThis !== 'undefined' ? globalThis : this, function() {
     const LANE_KEYS = ['imu', 'dsp', 'ble'];
     const VALID_EXPANDED_FLOWS = new Set(['imu', 'ble', 'dsp']);
-    const EXPANDED_SUBGRAPH_DIRECTION = 'TB';
     const SELECTED_LANE_KEY = '__flowchartSelectedLane';
 
     function defineSelectedLane(state, selectedLane) {
@@ -109,169 +108,115 @@
         return current;
     }
 
-    function normalizeExpandedFlow(expandedFlow) {
-        return VALID_EXPANDED_FLOWS.has(expandedFlow) ? expandedFlow : null;
-    }
-
-    // Legacy Mermaid output can only render one expanded lane at a time.
-    // Accept both the old string contract and the new { mode, openLanes } state,
-    // then collapse that richer state to the single lane this renderer supports.
-    function normalizeFlowchartRenderSelection(viewStateOrExpandedFlow) {
+    function normalizeFlowchartRenderState(viewStateOrExpandedFlow) {
         if (
             viewStateOrExpandedFlow === null ||
-            typeof viewStateOrExpandedFlow === 'string' ||
             typeof viewStateOrExpandedFlow === 'undefined'
         ) {
-            return {
-                mode: 'overview',
-                expandedFlow: normalizeExpandedFlow(viewStateOrExpandedFlow)
-            };
+            return createFlowchartState();
         }
 
-        const state = createFlowchartState(viewStateOrExpandedFlow);
+        if (typeof viewStateOrExpandedFlow === 'string') {
+            if (!VALID_EXPANDED_FLOWS.has(viewStateOrExpandedFlow)) {
+                return createFlowchartState();
+            }
 
-        if (state.mode !== 'detail') {
-            return {
-                mode: 'overview',
-                expandedFlow: null
-            };
-        }
-
-        const selectedLane = getSelectedLane(state) || findFirstOpenLane(state.openLanes);
-        if (selectedLane && state.openLanes[selectedLane]) {
-            return {
+            return createFlowchartState({
                 mode: 'detail',
-                expandedFlow: selectedLane
-            };
+                openLanes: {
+                    imu: viewStateOrExpandedFlow === 'imu',
+                    dsp: viewStateOrExpandedFlow === 'dsp',
+                    ble: viewStateOrExpandedFlow === 'ble'
+                },
+                [SELECTED_LANE_KEY]: viewStateOrExpandedFlow
+            });
         }
 
-        return {
-            mode: 'detail',
-            expandedFlow: null
-        };
+        return createFlowchartState(viewStateOrExpandedFlow);
+    }
+
+    function buildOverviewDefinition() {
+        return [
+            'graph LR;',
+            'Boot([Boot]):::overviewNode --> Adv([BLE advertise]):::overviewNode;',
+            'Adv --> Link([Client connects]):::overviewNode;',
+            'Link --> Ntf([CSC notifications enabled]):::overviewNode;',
+            'Ntf --> Imu([Sensor input]):::nodeOverviewImu;',
+            'Imu --> Dsp([Stroke estimate]):::nodeOverviewDsp;',
+            'Dsp --> Ble([BLE cadence out]):::nodeOverviewBle;',
+            'Ble -. restart .-> Adv;',
+            'classDef overviewNode fill:#f3f5f7,stroke:#172b45,stroke-width:2px,color:#122133;',
+            'classDef nodeOverviewImu fill:#7caec2,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;',
+            'classDef nodeOverviewDsp fill:#4f8ea8,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;',
+            'classDef nodeOverviewBle fill:#b8d6c3,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;'
+        ].join('\n');
+    }
+
+    function buildDetailDefinition(state) {
+        const { openLanes } = createFlowchartState(state);
+        const imuEntryNode = openLanes.imu ? 'ImuSelect' : 'ImuCompact';
+        const imuOutputNode = openLanes.imu ? 'ImuPush' : 'ImuCompact';
+        const dspEntryNode = openLanes.dsp ? 'DspStore' : 'DspCompact';
+        const dspOutputNode = 'DspOut';
+        const bleEntryNode = openLanes.ble ? 'BleAdv' : 'BleCompact';
+        const bleTickNode = openLanes.ble ? 'BleTick' : 'BleCompact';
+        const bleOutputNode = openLanes.ble ? 'BleSend' : 'BleCompact';
+        const imuLane = openLanes.imu
+            ? 'ImuClose([ - ]):::laneCloseImu; ImuSelect([Compile-time source]); ImuInit([Driver init]); ImuRun([Acquire samples]); ImuPush([Push to sample store]); ImuClose --> ImuSelect --> ImuInit --> ImuRun --> ImuPush;'
+            : 'ImuCompact([Sensor input]):::nodeLaneImu;';
+        const dspLane = openLanes.dsp
+            ? 'DspClose([ - ]):::laneCloseDsp; DspStore([Sample store]); DspAuto([Autocorrelation]); DspGuard([Confidence + harmonic guard]); DspKalman([Kalman smoothing]); DspOut([Cadence RPM / Flow Builder]):::nodeDspFlow; DspClose --> DspStore --> DspAuto --> DspGuard --> DspKalman --> DspOut;'
+            : 'DspCompact([Stroke estimate]):::nodeLaneDsp; DspStore([Sample store]); DspCompact -. expand .-> DspStore; DspStore --> DspOut([Cadence RPM / Flow Builder]):::nodeDspFlow;';
+        const bleLane = openLanes.ble
+            ? 'BleClose([ - ]):::laneCloseBle; BleAdv([BLE advertise]); BleConn([Client connects]); BleGate([CSC notifications enabled]); BleStart([pipeline_start()]); BleTick([CSC measurement timer]); BleSend([CSC notify]); BleClose --> BleAdv --> BleConn --> BleGate --> BleStart --> BleTick --> BleSend;'
+            : 'BleCompact([BLE cadence out]):::nodeLaneBle;';
+
+        const lines = [
+            'graph LR;',
+            'Back([Back]):::detailBack;',
+            'subgraph LANE_IMU [Sensor / IMU]',
+            imuLane,
+            'end',
+            'subgraph LANE_DSP [DSP / Stroke Rate]',
+            dspLane,
+            'end',
+            'subgraph LANE_BLE [BLE / CSCP]',
+            bleLane,
+            'end',
+            `Back --> ${imuEntryNode};`,
+            `Back --> ${dspEntryNode};`,
+            `Back --> ${bleEntryNode};`,
+            `${imuOutputNode} -. samples .-> DspStore;`,
+            `${dspOutputNode} -. cadence .-> ${bleTickNode};`,
+            `${bleOutputNode} -. stop/restart .-> ${bleEntryNode};`,
+            'classDef detailBack fill:#f3f5f7,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;',
+            'classDef nodeLaneImu fill:#7caec2,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;',
+            'classDef nodeLaneDsp fill:#4f8ea8,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;',
+            'classDef nodeLaneBle fill:#b8d6c3,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;',
+            'classDef nodeDspFlow fill:#4f8ea8,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;'
+        ];
+
+        if (openLanes.imu) {
+            lines.push('classDef laneCloseImu fill:#e11d48,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;');
+        }
+
+        if (openLanes.dsp) {
+            lines.push('classDef laneCloseDsp fill:#e11d48,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;');
+        }
+
+        if (openLanes.ble) {
+            lines.push('classDef laneCloseBle fill:#e11d48,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;');
+        }
+
+        return lines.join('\n');
     }
 
     function buildMainFlowchartDefinition(viewStateOrExpandedFlow) {
-        const renderState = normalizeFlowchartRenderSelection(viewStateOrExpandedFlow);
-        const currentFlow = renderState.expandedFlow;
-        const lines = [
-            'graph TD;',
-            'Init((Boot)) --> I2C[I2C Init]:::nodeImu;'
-        ];
+        const state = normalizeFlowchartRenderState(viewStateOrExpandedFlow);
 
-        if (currentFlow === 'imu') {
-            lines.push(
-                'subgraph IMU_Sub [IMU Integration]',
-                // Mermaid can choke when a TD subgraph explicitly repeats the parent TD direction.
-                `direction ${EXPANDED_SUBGRAPH_DIRECTION}`,
-                'IMU_Close(( - )):::closeBtn',
-                'Start_IMU((Start Driver)) --> Type{Sensor Type?};',
-                'Type -->|LIS3DH| InitL[Write CTRL_REG1];',
-                'InitL --> CfgL[Set ODR and Range];',
-                'CfgL --> IntL[Enable INT1];',
-                'IntL --> LoopL((Wait INT1));',
-                'Type -->|MPU6050| InitM[Write PWR_MGMT_1];',
-                'InitM --> CfgM[Set LPF and Rate];',
-                'CfgM --> LoopM((Timer Polling));',
-                'Type -->|Polar| Scan[Scan Polar];',
-                'Scan --> ConnectP[Connect MAC];',
-                'ConnectP --> Notif[Enable Notifications];',
-                'Notif --> LoopP((Wait BLE Evt));',
-                'end',
-                'I2C --> Start_IMU;'
-            );
-        } else {
-            lines.push('I2C --> IMU[IMU Wakeup]:::nodeImu;');
-        }
-
-        const imuExitNodes = currentFlow === 'imu' ? ['LoopL', 'LoopM', 'LoopP'] : ['IMU'];
-        const bleEntryNode = currentFlow === 'ble' ? 'Start_BLE' : 'BLE';
-        imuExitNodes.forEach((exitNode) => {
-            lines.push(`${exitNode} --> ${bleEntryNode};`);
-        });
-
-        if (currentFlow === 'ble') {
-            lines.push(
-                'subgraph BLE_Sub [BLE Initialization]',
-                `direction ${EXPANDED_SUBGRAPH_DIRECTION}`,
-                'BLE_Close(( - )):::closeBtn',
-                'Start_BLE((BLE App Init)) --> DB[Create CSCP DB];',
-                'DB --> Profile[Load Profile 0x1816];',
-                'Profile --> Gap[Set GAP params];',
-                'Gap --> Adv_Sub[Start Advertising];',
-                'Adv_Sub --> Peer[Peer Connected];',
-                'Peer --> Setup[Setup Connection Params];',
-                'Setup --> CCCD[Enable CCCD Notif];',
-                'CCCD --> Run((Ready to send SPM));',
-                'end'
-            );
-        } else {
-            lines.push(
-                'BLE[BLE Stack Init]:::nodeBle --> Adv[Start Advertising]:::nodeBle;',
-                'Adv --> Connect{Connected?};',
-                'Connect -->|Yes| CSCP[Start CSCP Notif]:::nodeBle;',
-                'Connect -->|No| Adv;'
-            );
-        }
-
-        const bleExitNodes = currentFlow === 'ble' ? ['Run'] : ['CSCP'];
-        bleExitNodes.forEach((exitNode) => {
-            lines.push(`${exitNode} --> Sleep[Extended Sleep];`);
-        });
-
-        lines.push(
-            'Sleep -->|Timer/INT| Wake[Wakeup and Read IMU]:::nodeImu;'
-        );
-
-        const dspEntryNode = currentFlow === 'dsp' ? 'Input' : 'DSP';
-        lines.push(`Wake --> ${dspEntryNode};`);
-
-        if (currentFlow === 'dsp') {
-            lines.push(
-                'subgraph DSP_Sub [DSP Pipeline]',
-                `direction ${EXPANDED_SUBGRAPH_DIRECTION}`,
-                'DSP_Close(( - )):::closeBtn',
-                'Input((Raw Accel)) --> LP[Low Pass Filter];',
-                'LP --> Win[Autocorr Window];',
-                'Win --> ACF[Compute ACF];',
-                'ACF --> Peak[Find ACF Peaks];',
-                'Peak --> HR[Harmonic Rejection];',
-                'HR --> Interp[Parabolic Interp];',
-                'Interp --> Kalman[Kalman Filter];',
-                'Kalman --> Output((SPM Output Click to Test)):::nodeDspFlow;',
-                'end'
-            );
-        } else {
-            lines.push('DSP[Run DSP Pipeline]:::nodeDsp;');
-        }
-
-        const dspExitNode = currentFlow === 'dsp' ? 'Output' : 'DSP';
-        lines.push(
-            `${dspExitNode} --> Send[Notify Cadence];`,
-            'Send --> Sleep;'
-        );
-
-        if (currentFlow === 'imu') {
-            lines.push('style IMU_Sub fill:transparent,stroke:#172b45,stroke-width:2px,stroke-dasharray: 5 5;');
-        }
-
-        if (currentFlow === 'ble') {
-            lines.push('style BLE_Sub fill:transparent,stroke:#172b45,stroke-width:2px,stroke-dasharray: 5 5;');
-        }
-
-        if (currentFlow === 'dsp') {
-            lines.push('style DSP_Sub fill:transparent,stroke:#172b45,stroke-width:2px,stroke-dasharray: 5 5;');
-        }
-
-        lines.push(
-            'classDef nodeImu fill:#7caec2,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;',
-            'classDef nodeBle fill:#7caec2,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;',
-            'classDef nodeDsp fill:#7caec2,stroke:#172b45,stroke-width:2px,color:#122133,cursor:pointer;',
-            'classDef nodeDspFlow fill:#4f8ea8,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;',
-            'classDef closeBtn fill:#e11d48,stroke:#172b45,stroke-width:2px,color:#fff,cursor:pointer;'
-        );
-
-        return lines.join('\n');
+        return state.mode === 'detail'
+            ? buildDetailDefinition(state)
+            : buildOverviewDefinition();
     }
 
     function hasClassToken(className, token) {

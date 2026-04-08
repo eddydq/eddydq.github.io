@@ -101,21 +101,42 @@ const overviewDefinition = buildMainFlowchartDefinition();
 const overviewStateDefinition = buildMainFlowchartDefinition(overviewState);
 const imuStateDefinition = buildMainFlowchartDefinition(detailState);
 const multiOpenDefinition = buildMainFlowchartDefinition(multiOpenState);
+const overviewStoryDefinition = buildMainFlowchartDefinition(createFlowchartState());
+const detailBoardDefinition = buildMainFlowchartDefinition(createFlowchartState({
+    mode: 'detail',
+    openLanes: { imu: true, dsp: false, ble: true }
+}));
 const collapsedLastLaneState = transitionFlowchartState(
     detailState,
     { type: 'collapse-lane', lane: 'imu' }
 );
 const collapsedLastLaneDefinition = buildMainFlowchartDefinition(collapsedLastLaneState);
 
-assert.match(overviewDefinition, /nodeImu/);
-assert.match(overviewDefinition, /nodeBle/);
-assert.match(overviewDefinition, /nodeDsp/);
+assert.match(overviewDefinition, /nodeOverviewImu/);
+assert.match(overviewDefinition, /nodeOverviewBle/);
+assert.match(overviewDefinition, /nodeOverviewDsp/);
 assert.strictEqual(overviewStateDefinition, overviewDefinition);
+assert.match(overviewStoryDefinition, /graph LR;/);
+assert.match(overviewStoryDefinition, /Boot/);
+assert.match(overviewStoryDefinition, /BLE advertise/);
+assert.match(overviewStoryDefinition, /CSC notifications/);
+assert.match(overviewStoryDefinition, /nodeOverviewImu/);
+assert.match(overviewStoryDefinition, /nodeOverviewDsp/);
+assert.match(overviewStoryDefinition, /nodeOverviewBle/);
+assert.notStrictEqual(imuStateDefinition, overviewDefinition);
+assert.notStrictEqual(multiOpenDefinition, overviewDefinition);
 assert.strictEqual(imuStateDefinition, buildMainFlowchartDefinition('imu'));
-assert.match(imuStateDefinition, /IMU_Close\(\( - \)\):::closeBtn/);
-assert.strictEqual(multiOpenDefinition, buildMainFlowchartDefinition('ble'));
-assert.match(multiOpenDefinition, /BLE_Close\(\( - \)\):::closeBtn/);
-assert.doesNotMatch(multiOpenDefinition, /IMU_Close\(\( - \)\):::closeBtn/);
+assert.notStrictEqual(multiOpenDefinition, buildMainFlowchartDefinition('ble'));
+assert.match(detailBoardDefinition, /subgraph LANE_IMU/);
+assert.match(detailBoardDefinition, /subgraph LANE_DSP/);
+assert.match(detailBoardDefinition, /subgraph LANE_BLE/);
+assert.match(detailBoardDefinition, /laneCloseImu/);
+assert.match(detailBoardDefinition, /laneCloseBle/);
+assert.doesNotMatch(detailBoardDefinition, /laneCloseDsp/);
+assert.match(detailBoardDefinition, /Sample store/);
+assert.match(detailBoardDefinition, /CSC notify/);
+assert.match(detailBoardDefinition, /nodeDspFlow/);
+assert.doesNotMatch(detailBoardDefinition, /\bdirection TD\b/);
 assert.deepStrictEqual(collapsedLastLaneState, overviewState);
 assert.strictEqual(collapsedLastLaneDefinition, overviewDefinition);
 
