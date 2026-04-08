@@ -7,6 +7,8 @@
 #include "pp_manifest.h"
 #include "pp_packet.h"
 
+#define PP_MAX_GRAPH_NODES 64
+
 typedef enum pp_runtime_status_e {
     PP_RUNTIME_OK = 0,
     PP_RUNTIME_INVALID_GRAPH = 1,
