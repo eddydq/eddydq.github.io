@@ -1,0 +1,119 @@
+{
+  "system_inputs": {
+    "raw": "raw_window",
+    "series": "series",
+    "candidate": "candidate",
+    "estimate": "estimate"
+  },
+  "blocks": [
+    {
+      "block_id": "representation.select_axis",
+      "group": "representation",
+      "inputs": [
+        { "name": "source", "kinds": ["raw_window"], "cardinality": "one" }
+      ],
+      "outputs": [
+        { "name": "primary", "kind": "series" }
+      ],
+      "params": [
+        {
+          "name": "axis",
+          "type": "enum",
+          "default": "y",
+          "min": 0.0,
+          "max": 0.0,
+          "enum_values": ["x", "y", "z"]
+        }
+      ],
+      "stateful": false
+    },
+    {
+      "block_id": "estimation.autocorrelation",
+      "group": "estimation",
+      "inputs": [
+        { "name": "source", "kinds": ["series"], "cardinality": "one" }
+      ],
+      "outputs": [
+        { "name": "primary", "kind": "candidate" }
+      ],
+      "params": [
+        {
+          "name": "min_lag_samples",
+          "type": "int",
+          "default": 15,
+          "min": 1.0,
+          "max": 512.0,
+          "enum_values": []
+        },
+        {
+          "name": "max_lag_samples",
+          "type": "int",
+          "default": 160,
+          "min": 2.0,
+          "max": 512.0,
+          "enum_values": []
+        }
+      ],
+      "stateful": false
+    },
+    {
+      "block_id": "validation.spm_range_gate",
+      "group": "validation",
+      "inputs": [
+        { "name": "source", "kinds": ["candidate"], "cardinality": "one" }
+      ],
+      "outputs": [
+        { "name": "accepted", "kind": "candidate" },
+        { "name": "rejected", "kind": "candidate" }
+      ],
+      "params": [
+        {
+          "name": "min_spm",
+          "type": "float",
+          "default": 20.0,
+          "min": 0.0,
+          "max": 1000.0,
+          "enum_values": []
+        },
+        {
+          "name": "max_spm",
+          "type": "float",
+          "default": 120.0,
+          "min": 0.0,
+          "max": 1000.0,
+          "enum_values": []
+        }
+      ],
+      "stateful": false
+    },
+    {
+      "block_id": "suivi.kalman_2d",
+      "group": "suivi",
+      "inputs": [
+        { "name": "source", "kinds": ["candidate"], "cardinality": "one" }
+      ],
+      "outputs": [
+        { "name": "primary", "kind": "estimate" }
+      ],
+      "params": [
+        {
+          "name": "process_noise",
+          "type": "float",
+          "default": 1.0,
+          "min": 0.001,
+          "max": 1000.0,
+          "enum_values": []
+        },
+        {
+          "name": "measurement_noise",
+          "type": "float",
+          "default": 10.0,
+          "min": 0.001,
+          "max": 1000.0,
+          "enum_values": []
+        }
+      ],
+      "stateful": true
+    }
+  ]
+}
