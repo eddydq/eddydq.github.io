@@ -48,8 +48,28 @@ if ($html -notmatch 'class="flowchart-toolbar"' -or $html -notmatch 'class="flow
     throw "Expected Task 4 firmware flow structural class hooks in index.html."
 }
 
+if ($html -match '<div class="flowchart-shell"[^>]*style=' -or $html -match '<div class="flowchart-frame"[^>]*style=') {
+    throw "Expected firmware flow shell and frame layout to move out of inline HTML styles."
+}
+
 if ($css -notmatch "--navy") {
     throw "Expected a color system in styles.css."
+}
+
+if ($css -notmatch '\.flowchart-shell' -or $css -notmatch '\.flowchart-frame') {
+    throw "Expected firmware flow shell/frame styles in styles.css."
+}
+
+if ($css -notmatch '\.flowchart-shell\.is-detail') {
+    throw "Expected detail-state flowchart shell styling in styles.css."
+}
+
+if ($css -notmatch 'transition:') {
+    throw "Expected transition styling for the firmware flow in styles.css."
+}
+
+if ($css -notmatch '\.flowchart-shell\.is-transitioning\s+\.flowchart-stage') {
+    throw "Expected transitioning flowchart stage styling in styles.css."
 }
 
 if ($js -notmatch "IntersectionObserver") {
@@ -66,6 +86,18 @@ if ($js -match "expandedFlow") {
 
 if ($js -notmatch "classList\.toggle\('is-detail'") {
     throw "Expected script.js to toggle the flowchart is-detail class."
+}
+
+if ($js -notmatch 'async function rerenderFlowchart') {
+    throw "Expected script.js to define a rerenderFlowchart helper."
+}
+
+if ($js -notmatch "classList\.add\('is-transitioning'") {
+    throw "Expected script.js to add the flowchart transitioning class during rerenders."
+}
+
+if ($js -notmatch "classList\.remove\('is-transitioning'") {
+    throw "Expected script.js to remove the flowchart transitioning class after rerenders."
 }
 
 Write-Host "Static site smoke test passed."

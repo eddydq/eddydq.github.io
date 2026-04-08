@@ -302,13 +302,22 @@ window.renderMainFlowchart = async function() {
     }
 };
 
+async function rerenderFlowchart() {
+    const shell = document.getElementById('flowchart-shell');
+    shell?.classList.add('is-transitioning');
+    await renderMainFlowchart();
+    requestAnimationFrame(() => {
+        shell?.classList.remove('is-transitioning');
+    });
+}
+
 document.getElementById('flowchart-back-btn')?.addEventListener('click', function() {
     if (typeof transitionFlowchartState !== 'function') {
         return;
     }
 
     flowchartState = transitionFlowchartState(flowchartState, { type: 'back-overview' });
-    renderMainFlowchart();
+    rerenderFlowchart();
 });
 
 // SVG Click Event Delegation
@@ -333,7 +342,7 @@ document.addEventListener('click', function(e) {
 
             if (action && typeof transitionFlowchartState === 'function') {
                 flowchartState = transitionFlowchartState(flowchartState, action);
-                renderMainFlowchart();
+                rerenderFlowchart();
                 return;
             }
         }

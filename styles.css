@@ -480,6 +480,80 @@ main {
     gap: 1.5rem;
 }
 
+.feature-grid-single {
+    grid-template-columns: 1fr;
+}
+
+.copy-card-centered {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.firmware-flow-card {
+    position: relative;
+}
+
+.flowchart-shell {
+    width: 100%;
+    max-width: 980px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.flowchart-toolbar {
+    width: 100%;
+    min-height: 2.75rem;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.flowchart-back-btn {
+    border: 2px solid var(--navy);
+    background: #ffffff;
+    color: var(--navy);
+    box-shadow: var(--hard-shadow-sm);
+}
+
+.flowchart-back-btn:hover,
+.flowchart-back-btn:focus-visible {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 var(--navy);
+}
+
+.flowchart-frame {
+    width: 100%;
+    min-height: 520px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    position: relative;
+    background: var(--mist);
+    border: 2px dashed var(--navy);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.flowchart-shell.is-detail .flowchart-frame {
+    min-height: 520px;
+}
+
+.flowchart-stage {
+    width: 100%;
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.flowchart-shell.is-transitioning .flowchart-stage {
+    opacity: 0.55;
+    transform: translateY(6px);
+}
+
 .feature-card h3 {
     font-size: 1.2rem;
     border-bottom: 2px solid var(--navy);
