@@ -36,8 +36,16 @@ if ($html -notmatch 'id="flowchart-shell"') {
     throw "Expected firmware flow shell container in index.html."
 }
 
+if ($html -notmatch 'class="flowchart-shell" id="flowchart-shell"') {
+    throw "Expected firmware flow shell class hook in index.html."
+}
+
 if ($html -notmatch 'id="flowchart-back-btn"') {
     throw "Expected firmware flow back button in index.html."
+}
+
+if ($html -notmatch 'class="flowchart-toolbar"' -or $html -notmatch 'class="flowchart-back-btn"' -or $html -notmatch 'class="flowchart-frame"' -or $html -notmatch 'class="mermaid flowchart-stage"') {
+    throw "Expected Task 4 firmware flow structural class hooks in index.html."
 }
 
 if ($css -notmatch "--navy") {
@@ -50,6 +58,14 @@ if ($js -notmatch "IntersectionObserver") {
 
 if ($js -notmatch "createFlowchartState" -or $js -notmatch "transitionFlowchartState") {
     throw "Expected script.js to use the firmware flow state helpers."
+}
+
+if ($js -match "expandedFlow") {
+    throw "Expected script.js to remove the legacy expandedFlow page state."
+}
+
+if ($js -notmatch "classList\.toggle\('is-detail'") {
+    throw "Expected script.js to toggle the flowchart is-detail class."
 }
 
 Write-Host "Static site smoke test passed."

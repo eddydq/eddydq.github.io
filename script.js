@@ -82,13 +82,14 @@ const translations = {
         "fw-arch-eyebrow": "Firmware Architecture",
         "fw-arch-h2": "A complete stack from raw PCB to algorithmic telemetry.",
         "fw-overall-h3": "System Flow",
-        "fw-overall-p": "Main execution loop outlining task scheduling and power management.",
+        "fw-overall-p": "Main execution loop outlining task scheduling and power management. Click the highlighted nodes above to expand process details.",
         "fw-imu-h3": "Sensor Integration",
         "fw-imu-p": "Abstracted state machines for I2C and BLE Central sensor acquisition.",
         "fw-cscp-h3": "BLE Initialization",
         "fw-cscp-p": "Setup of GATT services, advertising data, and CSCP profile broadcasting.",
         "fw-dsp-h3": "DSP Pipeline",
         "fw-dsp-p": "Q16.16 fixed-point math, low-pass filtering, and autocorrelation period estimation. Test the algorithm interactively in the <a href=\"flow.html\" style=\"text-decoration: underline; color: var(--water-strong);\">Flow Builder</a>.",
+        "flowchart-back-btn": "Back to overview",
         "placeholder-overall-flow": "Overall Flowchart Placeholder",
         "placeholder-imu-flow": "IMU Connection Flowcharts Placeholder (MPU6050, LIS3DH, Polar)",
         "placeholder-cscp-flow": "CSCP Initialization Flowchart Placeholder",
@@ -174,13 +175,14 @@ const translations = {
         "fw-arch-eyebrow": "Architecture Firmware",
         "fw-arch-h2": "Une stack complète, du PCB brut à la télémétrie algorithmique.",
         "fw-overall-h3": "Flux Système",
-        "fw-overall-p": "Boucle d'exécution principale détaillant l'ordonnancement des tâches et la gestion de l'alimentation.",
+        "fw-overall-p": "Boucle d'exécution principale détaillant l'ordonnancement des tâches et la gestion de l'alimentation. Cliquez sur les nœuds mis en évidence ci-dessus pour développer les détails du processus.",
         "fw-imu-h3": "Intégration des Capteurs",
         "fw-imu-p": "Machines à états abstraites pour l'acquisition des capteurs I2C et BLE Central.",
         "fw-cscp-h3": "Initialisation BLE",
         "fw-cscp-p": "Configuration des services GATT, des données d'annonce et diffusion du profil CSCP.",
         "fw-dsp-h3": "Pipeline DSP",
         "fw-dsp-p": "Mathématiques à virgule fixe Q16.16, filtrage passe-bas et estimation de période par autocorrélation. Testez l'algorithme de façon interactive dans le <a href=\"flow.html\" style=\"text-decoration: underline; color: var(--water-strong);\">Flow Builder</a>.",
+        "flowchart-back-btn": "Retour à la vue d'ensemble",
         "placeholder-overall-flow": "Espace Réservé : Diagramme de Flux Global",
         "placeholder-imu-flow": "Espace Réservé : Diagrammes de Connexion IMU (MPU6050, LIS3DH, Polar)",
         "placeholder-cscp-flow": "Espace Réservé : Diagramme d'Initialisation CSCP",
@@ -273,7 +275,7 @@ function syncFlowchartUi() {
     const backBtn = document.getElementById('flowchart-back-btn');
     if (!shell || !backBtn) return;
 
-    shell.dataset.flowchartMode = flowchartState?.mode || 'overview';
+    shell.classList.toggle('is-detail', flowchartState?.mode === 'detail');
     backBtn.hidden = flowchartState?.mode !== 'detail';
 }
 

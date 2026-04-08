@@ -167,10 +167,12 @@
 
             <div class="feature-grid" style="grid-template-columns: 1fr;">
                 <article class="copy-card" data-reveal style="display: flex; flex-direction: column; align-items: center; text-align: center; position: relative;">
-                    <div id="flowchart-shell" style="width: 100%;">
-                        <button id="flowchart-back-btn" type="button" hidden>Back to overview</button>
-                        <div style="width: 100%; min-height: 400px; padding: 1rem; background: var(--mist); display: flex; align-items: center; justify-content: center; border: 2px dashed var(--navy); margin-bottom: 1rem; position: relative;" id="flowchart-container">
-                            <div class="mermaid" id="main-flowchart">
+                    <div class="flowchart-shell" id="flowchart-shell" style="width: 100%;">
+                        <div class="flowchart-toolbar">
+                            <button class="flowchart-back-btn" id="flowchart-back-btn" type="button" hidden data-i18n="flowchart-back-btn">Back to overview</button>
+                        </div>
+                        <div class="flowchart-frame" style="width: 100%; min-height: 400px; padding: 1rem; background: var(--mist); display: flex; align-items: center; justify-content: center; border: 2px dashed var(--navy); margin-bottom: 1rem; position: relative;" id="flowchart-container">
+                            <div class="mermaid flowchart-stage" id="main-flowchart">
                             </div>
                         </div>
                     </div>
