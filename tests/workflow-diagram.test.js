@@ -33,6 +33,22 @@ assert.deepStrictEqual(multiOpenState, {
     openLanes: { imu: true, dsp: false, ble: true }
 });
 
+const plainMultiOpenState = {
+    mode: 'detail',
+    openLanes: { imu: true, dsp: false, ble: true }
+};
+
+const plainMultiOpenCollapse = transitionFlowchartState(
+    plainMultiOpenState,
+    { type: 'collapse-lane', lane: 'imu' }
+);
+
+assert.deepStrictEqual(plainMultiOpenCollapse, {
+    mode: 'detail',
+    openLanes: { imu: false, dsp: false, ble: true }
+});
+assert.strictEqual(buildMainFlowchartDefinition(plainMultiOpenCollapse), buildMainFlowchartDefinition('ble'));
+
 const collapsedState = transitionFlowchartState(
     multiOpenState,
     { type: 'collapse-lane', lane: 'imu' }

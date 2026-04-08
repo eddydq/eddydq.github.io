@@ -27,6 +27,16 @@
         return state && state[SELECTED_LANE_KEY];
     }
 
+    function findFirstOpenLane(openLanes, excludedLane) {
+        for (const lane of LANE_KEYS) {
+            if (lane !== excludedLane && openLanes[lane]) {
+                return lane;
+            }
+        }
+
+        return null;
+    }
+
     function createFlowchartState(overrides = {}) {
         return defineSelectedLane({
             mode: overrides.mode === 'detail' ? 'detail' : 'overview',
@@ -79,15 +89,8 @@
             };
             let selectedLane = getSelectedLane(current);
 
-            if (selectedLane === action.lane) {
-                selectedLane = null;
-
-                for (const lane of LANE_KEYS) {
-                    if (openLanes[lane]) {
-                        selectedLane = lane;
-                        break;
-                    }
-                }
+            if (selectedLane === action.lane || !selectedLane) {
+                selectedLane = findFirstOpenLane(openLanes, action.lane);
             }
 
             if (!selectedLane) {
@@ -132,21 +135,12 @@
             };
         }
 
-        const selectedLane = getSelectedLane(state);
+        const selectedLane = getSelectedLane(state) || findFirstOpenLane(state.openLanes);
         if (selectedLane && state.openLanes[selectedLane]) {
             return {
                 mode: 'detail',
                 expandedFlow: selectedLane
             };
-        }
-
-        for (const lane of LANE_KEYS) {
-            if (state.openLanes[lane]) {
-                return {
-                    mode: 'detail',
-                    expandedFlow: lane
-                };
-            }
         }
 
         return {
