@@ -71,8 +71,48 @@
         return VALID_EXPANDED_FLOWS.has(expandedFlow) ? expandedFlow : null;
     }
 
-    function buildMainFlowchartDefinition(expandedFlow) {
-        const currentFlow = normalizeExpandedFlow(expandedFlow);
+    // Legacy Mermaid output can only render one expanded lane at a time.
+    // Accept both the old string contract and the new { mode, openLanes } state,
+    // then collapse that richer state to the single lane this renderer supports.
+    function normalizeFlowchartRenderSelection(viewStateOrExpandedFlow) {
+        if (
+            viewStateOrExpandedFlow === null ||
+            typeof viewStateOrExpandedFlow === 'string' ||
+            typeof viewStateOrExpandedFlow === 'undefined'
+        ) {
+            return {
+                mode: 'overview',
+                expandedFlow: normalizeExpandedFlow(viewStateOrExpandedFlow)
+            };
+        }
+
+        const state = createFlowchartState(viewStateOrExpandedFlow);
+
+        if (state.mode !== 'detail') {
+            return {
+                mode: 'overview',
+                expandedFlow: null
+            };
+        }
+
+        for (const lane of LANE_KEYS) {
+            if (state.openLanes[lane]) {
+                return {
+                    mode: 'detail',
+                    expandedFlow: lane
+                };
+            }
+        }
+
+        return {
+            mode: 'detail',
+            expandedFlow: null
+        };
+    }
+
+    function buildMainFlowchartDefinition(viewStateOrExpandedFlow) {
+        const renderState = normalizeFlowchartRenderSelection(viewStateOrExpandedFlow);
+        const currentFlow = renderState.expandedFlow;
         const lines = [
             'graph TD;',
             'Init((Boot)) --> I2C[I2C Init]:::nodeImu;'

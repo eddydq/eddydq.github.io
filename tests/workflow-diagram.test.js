@@ -72,11 +72,15 @@ assert.deepStrictEqual(
 );
 
 const overviewDefinition = buildMainFlowchartDefinition();
+const overviewStateDefinition = buildMainFlowchartDefinition(overviewState);
+const imuStateDefinition = buildMainFlowchartDefinition(detailState);
 
 assert.match(overviewDefinition, /nodeImu/);
 assert.match(overviewDefinition, /nodeBle/);
 assert.match(overviewDefinition, /nodeDsp/);
-assert.match(overviewDefinition, /closeBtn/);
+assert.strictEqual(overviewStateDefinition, overviewDefinition);
+assert.strictEqual(imuStateDefinition, buildMainFlowchartDefinition('imu'));
+assert.match(imuStateDefinition, /IMU_Close\(\( - \)\):::closeBtn/);
 
 assert.deepStrictEqual(
     getFlowchartActionFromClassName('node default nodeImu'),
