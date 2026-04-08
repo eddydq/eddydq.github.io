@@ -121,6 +121,10 @@ const detailBoardDefinition = buildMainFlowchartDefinition(createFlowchartState(
     mode: 'detail',
     openLanes: { imu: true, dsp: false, ble: true }
 }));
+const fullyOpenDetailDefinition = buildMainFlowchartDefinition(createFlowchartState({
+    mode: 'detail',
+    openLanes: { imu: true, dsp: true, ble: true }
+}));
 const collapsedLastLaneState = transitionFlowchartState(
     detailState,
     { type: 'collapse-lane', lane: 'imu' }
@@ -171,6 +175,15 @@ assert.match(detailBoardDefinition, /Sample store/);
 assert.match(detailBoardDefinition, /CSC notify/);
 assert.match(detailBoardDefinition, /nodeDspFlow/);
 assert.doesNotMatch(detailBoardDefinition, /\bdirection TD\b/);
+assert.match(fullyOpenDetailDefinition, /laneCloseImu/);
+assert.match(fullyOpenDetailDefinition, /laneCloseDsp/);
+assert.match(fullyOpenDetailDefinition, /laneCloseBle/);
+assert.match(fullyOpenDetailDefinition, /Sample store/);
+assert.match(fullyOpenDetailDefinition, /Autocorrelation/);
+assert.match(fullyOpenDetailDefinition, /Kalman smoothing/);
+assert.match(fullyOpenDetailDefinition, /pipeline_start\(\)/);
+assert.match(fullyOpenDetailDefinition, /CSC notify/);
+assert.match(fullyOpenDetailDefinition, /Compile-time source/);
 assert.deepStrictEqual(collapsedLastLaneState, overviewState);
 assert.strictEqual(collapsedLastLaneDefinition, overviewStateDefinition);
 
