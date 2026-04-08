@@ -32,12 +32,24 @@ if ($html -notmatch "data-reveal") {
     throw "Expected reveal hooks in the markup."
 }
 
+if ($html -notmatch 'id="flowchart-shell"') {
+    throw "Expected firmware flow shell container in index.html."
+}
+
+if ($html -notmatch 'id="flowchart-back-btn"') {
+    throw "Expected firmware flow back button in index.html."
+}
+
 if ($css -notmatch "--navy") {
     throw "Expected a color system in styles.css."
 }
 
 if ($js -notmatch "IntersectionObserver") {
     throw "Expected script.js to handle reveal animations."
+}
+
+if ($js -notmatch "createFlowchartState" -or $js -notmatch "transitionFlowchartState") {
+    throw "Expected script.js to use the firmware flow state helpers."
 }
 
 Write-Host "Static site smoke test passed."

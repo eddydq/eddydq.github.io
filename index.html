@@ -15,6 +15,8 @@
         rel="stylesheet"
     >
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'base', themeVariables: { primaryColor: '#f3f5f7', primaryBorderColor: '#172b45', primaryTextColor: '#172b45', fontFamily: 'Sora', lineType: 'ortho' } });</script>
 </head>
 <body>
     <header class="site-header">
@@ -24,9 +26,11 @@
         </a>
 
         <nav class="site-nav" aria-label="Primary">
-            <a href="#overview" data-i18n="nav-architecture">Architecture</a>
-            <a href="#features" data-i18n="nav-specs">Technical Specs</a>
-            <a href="#open-source" data-i18n="nav-repo">Repository</a>
+            <a href="#specs" data-i18n="nav-specs">Specifications</a>
+            <a href="#firmware-arch" data-i18n="nav-fw-arch">Firmware Arch</a>
+            <a href="#hardware-arch" data-i18n="nav-hw-arch">Hardware Arch</a>
+            <a href="#cad" data-i18n="nav-cad">CAD</a>
+            <a href="#repo" data-i18n="nav-repo">Repository</a>
             <a href="flow.html" data-i18n="nav-flow">Flow Builder</a>
             <div class="lang-toggle">
                 <button class="lang-btn active" data-lang="en">EN</button>
@@ -36,6 +40,7 @@
     </header>
 
     <main id="top">
+        <!-- 1. Presentation -->
         <section class="hero">
             <div class="hero-copy" data-reveal>
                 <p class="eyebrow" data-i18n="hero-eyebrow">Embedded Hardware & Firmware</p>
@@ -52,7 +57,7 @@
                     <a class="button button-primary" data-config-link="github" href="#" data-i18n="btn-github">
                         View GitHub Repo
                     </a>
-                    <a class="button button-secondary" href="#overview" data-i18n="btn-architecture">System Architecture</a>
+                    <a class="button button-secondary" href="#specs" data-i18n="btn-architecture">System Architecture</a>
                 </div>
 
                 <ul class="hero-tags" aria-label="Project highlights">
@@ -122,73 +127,136 @@
             </article>
         </section>
 
-        <section class="content-section" id="overview">
+        <!-- 2. Specifications -->
+        <section class="content-section" id="specs">
             <div class="section-heading" data-reveal>
-                <p class="eyebrow" data-i18n="overview-eyebrow">System Architecture</p>
-                <h2 data-i18n="overview-h2">A complete stack from raw PCB to algorithmic telemetry.</h2>
-            </div>
-
-            <div class="overview-grid">
-                <article class="copy-card" data-reveal>
-                    <h3 data-i18n="overview-copy-h3">Technical Foundations</h3>
-                    <p data-i18n="overview-copy-p1">
-                        In modern sports, athletic performance relies on high-fidelity data. The challenge was building a sensor that is autonomous, low-cost, and extraordinarily compact.
-                    </p>
-                    <p data-i18n="overview-copy-p2">
-                        Initially prototyped on an ESP32, power requirements dictated a battery that compromised form factor. The transition to the Renesas DA14531MOD solved power constraints but required meticulous C firmware design to handle real-time IMU processing without floating-point hardware.
-                    </p>
-                </article>
-
-                <article class="sports-card" data-reveal>
-                    <h3 data-i18n="overview-sports-h3">Supported IMU Sources</h3>
-                    <div class="sports-list">
-                        <span>STMicro LIS3DH (I2C)</span>
-                        <span>InvenSense MPU6050 (I2C)</span>
-                        <span>Polar Verity Sense (BLE Central)</span>
-                    </div>
-                    <p style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--slate);" data-i18n="overview-sports-note">* Handled via compile-time abstraction layer.</p>
-                </article>
-            </div>
-        </section>
-
-        <section class="content-section" id="features">
-            <div class="section-heading" data-reveal>
-                <p class="eyebrow" data-i18n="features-eyebrow">Technical Specs</p>
-                <h2 data-i18n="features-h2">Firmware engineered for precision and power efficiency.</h2>
+                <p class="eyebrow" data-i18n="specs-eyebrow">Specifications</p>
+                <h2 data-i18n="specs-h2">Engineered for precision and power efficiency.</h2>
             </div>
 
             <div class="feature-grid">
                 <article class="feature-card" data-reveal>
-                    <h3 data-i18n="feat-dsp-h3">Q16.16 Fixed-Point DSP</h3>
-                    <p data-i18n="feat-dsp-p">
-                        Autocorrelation-based period estimation built entirely using Q16.16 fixed-point math to bypass the Cortex-M0+ lack of FPU.
-                    </p>
-                </article>
-
-                <article class="feature-card" data-reveal>
-                    <h3 data-i18n="feat-pipe-h3">Algorithm Pipeline</h3>
-                    <p data-i18n="feat-pipe-p">
-                        Features harmonic rejection to prevent half-rate lockouts, sub-sample parabolic interpolation for precision, and a Kalman filter for cold-start confirmation.
-                    </p>
-                </article>
-
-                <article class="feature-card" data-reveal>
-                    <h3 data-i18n="feat-ble-h3">BLE CSCP Spoofing</h3>
-                    <p data-i18n="feat-ble-p">
+                    <h3 data-i18n="feat-cscp-h3">BLE CSCP Protocol</h3>
+                    <p data-i18n="feat-cscp-p">
                         Broadcasts real-time paddle stroke rate as "crank cadence" using the BLE Cycling Speed & Cadence Profile (0x1816), enabling instant compatibility with Wahoo, Garmin, and Zwift.
                     </p>
                 </article>
 
                 <article class="feature-card" data-reveal>
-                    <h3 data-i18n="feat-console-h3">Console & Diagnostics</h3>
-                    <p data-i18n="feat-console-p">
-                        Includes a dedicated console mode (<code>CFG_PADDLING_PULSE_CONSOLE_MODE</code>) exposing a single-wire UART AT command interface for querying cadence, IMU status, and battery.
+                    <h3 data-i18n="feat-battery-h3">Autonomy</h3>
+                    <p data-i18n="feat-battery-p">
+                        Optimized power consumption utilizing the ultra-low power states of the DA14531MOD, allowing for hundreds of hours of paddling on a single coin-cell battery.
+                    </p>
+                </article>
+
+                <article class="feature-card" data-reveal>
+                    <h3 data-i18n="feat-size-h3">Ultra-Compact Size</h3>
+                    <p data-i18n="feat-size-p">
+                        Designed with an extremely small footprint to mount seamlessly on any paddle shaft without affecting weight balance or hydrodynamics.
                     </p>
                 </article>
             </div>
         </section>
 
-        <section class="content-section" id="open-source">
+        <!-- 3. Firmware Architecture -->
+        <section class="content-section" id="firmware-arch">
+            <div class="section-heading" data-reveal>
+                <p class="eyebrow" data-i18n="fw-arch-eyebrow">Firmware Architecture</p>
+                <h2 data-i18n="fw-arch-h2">A complete stack from raw PCB to algorithmic telemetry.</h2>
+            </div>
+
+            <div class="feature-grid" style="grid-template-columns: 1fr;">
+                <article class="copy-card" data-reveal style="display: flex; flex-direction: column; align-items: center; text-align: center; position: relative;">
+                    <div id="flowchart-shell" style="width: 100%;">
+                        <button id="flowchart-back-btn" type="button" hidden>Back to overview</button>
+                        <div style="width: 100%; min-height: 400px; padding: 1rem; background: var(--mist); display: flex; align-items: center; justify-content: center; border: 2px dashed var(--navy); margin-bottom: 1rem; position: relative;" id="flowchart-container">
+                            <div class="mermaid" id="main-flowchart">
+                            </div>
+                        </div>
+                    </div>
+                    <h3 data-i18n="fw-overall-h3">System Flow</h3>
+                    <p data-i18n="fw-overall-p">Main execution loop outlining task scheduling and power management. Click the highlighted nodes above to expand process details.</p>
+                </article>
+            </div>
+        </section>
+
+        <!-- 4. Hardware Architecture -->
+        <section class="content-section" id="hardware-arch">
+            <div class="section-heading" data-reveal>
+                <p class="eyebrow" data-i18n="hw-arch-eyebrow">Hardware Architecture</p>
+                <h2 data-i18n="hw-arch-h2">Custom PCB Design and Component Selection</h2>
+            </div>
+            <div class="feature-grid">
+                <article class="copy-card" data-reveal style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+                    <div style="width: 100%; height: 250px; background: var(--mist); display: flex; align-items: center; justify-content: center; border: 2px dashed var(--navy); margin-bottom: 1rem;">
+                        <span style="color: var(--navy); font-weight: bold;" data-i18n="placeholder-circuit">Circuit Diagram Placeholder</span>
+                    </div>
+                    <h3 data-i18n="hw-circuit-h3">Schematics</h3>
+                </article>
+
+                <article class="copy-card" data-reveal style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+                    <div style="width: 100%; height: 250px; background: var(--mist); display: flex; align-items: center; justify-content: center; border: 2px dashed var(--navy); margin-bottom: 1rem;">
+                        <span style="color: var(--navy); font-weight: bold;" data-i18n="placeholder-pcb">PCB Layout Placeholder</span>
+                    </div>
+                    <h3 data-i18n="hw-pcb-h3">Board Layout</h3>
+                </article>
+                
+                <article class="copy-card" data-reveal style="grid-column: 1 / -1;">
+                    <p data-i18n="hw-arch-p">
+                        A highly compact design utilizing the DA14531MOD footprint, maximizing battery life and minimizing weight. The board layout isolates noisy digital paths from the sensitive IMU traces to ensure clean data capture on the water.
+                    </p>
+                </article>
+            </div>
+        </section>
+
+        <!-- 5. CAD -->
+        <section class="content-section" id="cad">
+            <div class="section-heading" data-reveal>
+                <p class="eyebrow" data-i18n="cad-eyebrow">CAD & Enclosure</p>
+                <h2 data-i18n="cad-h2">Waterproof Enclosure Design</h2>
+            </div>
+            <div class="feature-grid">
+                <article class="copy-card" data-reveal style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; text-align: center;">
+                    <div style="width: 100%; height: 300px; background: var(--mist); display: flex; align-items: center; justify-content: center; border: 2px dashed var(--navy); margin-bottom: 1rem;">
+                        <span style="color: var(--navy); font-weight: bold;" data-i18n="placeholder-exploded">Exploded View Placeholder</span>
+                    </div>
+                    <h3 data-i18n="cad-exploded-h3">Mechanical Assembly</h3>
+                </article>
+                
+                <article class="copy-card" data-reveal style="grid-column: 1 / -1;">
+                    <h3 data-i18n="cad-components-h3">Component Breakdown</h3>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem; line-height: 1.8;">
+                        <li data-i18n="cad-comp-1"><strong>Main Housing:</strong> 3D-printed hydrodynamic shell.</li>
+                        <li data-i18n="cad-comp-2"><strong>O-Ring Seal:</strong> Ensures complete water resistance.</li>
+                        <li data-i18n="cad-comp-3"><strong>PCB Mount:</strong> Friction-fit sled for the electronics.</li>
+                    </ul>
+                </article>
+
+                <article class="copy-card" data-reveal style="grid-column: 1 / -1;">
+                    <p data-i18n="cad-p">
+                        The physical housing is designed for water resistance and durability in harsh paddling conditions. Iterative 3D printed prototypes validated the O-ring seals and hydrodynamic shape for minimal drag.
+                    </p>
+                </article>
+            </div>
+        </section>
+
+        <!-- 6. Solar (Hidden) -->
+        <section class="content-section" id="solar" style="display: none;">
+            <div class="section-heading" data-reveal>
+                <p class="eyebrow" data-i18n="solar-eyebrow">Solar</p>
+                <h2 data-i18n="solar-h2">Solar Energy Harvesting</h2>
+            </div>
+            <div class="feature-grid">
+                <article class="copy-card" data-reveal style="grid-column: 1 / -1;">
+                    <p data-i18n="solar-p">
+                        Future integration of solar cells to extend operational battery life indefinitely.
+                    </p>
+                </article>
+            </div>
+        </section>
+
+        <!-- 7. Repository -->
+        <section class="content-section" id="repo">
             <div class="cta-panel" data-reveal>
                 <p class="eyebrow" data-i18n="repo-eyebrow">Repository</p>
                 <h2 data-i18n="repo-h2">Explore the C source code, PCB schematics, and algorithmic models.</h2>
@@ -210,6 +278,7 @@
         <p>&copy; <span id="year"></span></p>
     </footer>
 
+    <script src="workflow-diagram.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
