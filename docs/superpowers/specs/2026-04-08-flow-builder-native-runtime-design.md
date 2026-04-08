@@ -23,7 +23,7 @@ However, GitHub Pages cannot run the existing Python runtime directly, and the l
 ## Non-Goals
 
 - Do not modify `C:\dev\_work\PaddlingPulse\firmware` in this phase.
-- Do not keep freeform user-created left/right socket counts.
+- Do not allow users to add arbitrary unnamed input or output sockets. Ports and their allowed multiplicity must be defined by each block manifest.
 - Do not introduce a backend service.
 - Do not make Python the long-term execution source of truth.
 
@@ -197,7 +197,7 @@ Dropping a block onto the canvas creates a node with:
 - a fixed set of named output ports from the manifest
 - generated parameter controls from `params_schema`
 
-The builder must not allow arbitrary `+/-` input or output sockets.
+The builder must not allow arbitrary `+/-` input or output sockets. Port count, names, and whether an input accepts one or many connections must come from the block manifest.
 
 ### Connections
 
@@ -210,6 +210,19 @@ Validation rules:
 - multi-cardinality input ports may accept many incoming edges
 - cycles are rejected
 - unknown block or port identifiers are rejected
+
+### Port Styling
+
+The builder may use color as a visual aid for compatibility, but color must not replace the manifest contract.
+
+Recommended behavior:
+
+- assign a consistent color family to each packet kind
+- render compatible ports with the same color family
+- mute or disable incompatible targets during connection drag
+- use labels, tooltips, or icons in addition to color so compatibility is not conveyed by color alone
+
+If an input port accepts multiple packet kinds, the UI may use a mixed or segmented visual treatment, but the actual compatibility rule remains packet-kind validation from the manifest.
 
 ### Boundary Nodes
 
