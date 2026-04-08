@@ -36,7 +36,7 @@ if ($html -notmatch 'id="flowchart-shell"') {
     throw "Expected firmware flow shell container in index.html."
 }
 
-if ($html -notmatch 'class="flowchart-shell" id="flowchart-shell"') {
+if ($html -notmatch 'class="[^"]*\bflowchart-shell\b[^"]*"') {
     throw "Expected firmware flow shell class hook in index.html."
 }
 
@@ -44,7 +44,7 @@ if ($html -notmatch 'id="flowchart-back-btn"') {
     throw "Expected firmware flow back button in index.html."
 }
 
-if ($html -notmatch 'class="flowchart-toolbar"' -or $html -notmatch 'class="flowchart-back-btn"' -or $html -notmatch 'class="flowchart-frame"' -or $html -notmatch 'class="mermaid flowchart-stage"') {
+if ($html -notmatch 'class="[^"]*\bflowchart-toolbar\b[^"]*"' -or $html -notmatch 'class="[^"]*\bflowchart-back-btn\b[^"]*"' -or $html -notmatch 'class="[^"]*\bflowchart-frame\b[^"]*"' -or $html -notmatch 'class="[^"]*\bflowchart-stage\b[^"]*"') {
     throw "Expected Task 4 firmware flow structural class hooks in index.html."
 }
 
@@ -64,8 +64,16 @@ if ($css -notmatch '\.flowchart-shell\.is-detail') {
     throw "Expected detail-state flowchart shell styling in styles.css."
 }
 
-if ($css -notmatch 'transition:') {
-    throw "Expected transition styling for the firmware flow in styles.css."
+if ($css -match '\.flowchart-frame\s*\{[^}]*overflow:\s*hidden') {
+    throw "Expected firmware flow frame to avoid clipping overflow on narrow screens."
+}
+
+if ($css -notmatch '\.flowchart-frame\s*\{[^}]*overflow:\s*(auto|scroll)' -and $css -notmatch '\.flowchart-stage\s*\{[^}]*overflow:\s*(auto|scroll)') {
+    throw "Expected the firmware flow to provide contained scrolling instead of clipping."
+}
+
+if ($css -notmatch '\.flowchart-stage\s*\{[^}]*transition:\s*[^}]*(opacity|transform)') {
+    throw "Expected transition styling on the firmware flow stage rules."
 }
 
 if ($css -notmatch '\.flowchart-shell\.is-transitioning\s+\.flowchart-stage') {
@@ -98,6 +106,18 @@ if ($js -notmatch "classList\.add\('is-transitioning'") {
 
 if ($js -notmatch "classList\.remove\('is-transitioning'") {
     throw "Expected script.js to remove the flowchart transitioning class after rerenders."
+}
+
+if ($js -notmatch 'let\s+flowchartRenderToken\s*=\s*0') {
+    throw "Expected script.js to track flowchart rerender tokens for overlapping updates."
+}
+
+if ($js -notmatch 'const\s+renderToken\s*=\s*\+\+flowchartRenderToken') {
+    throw "Expected script.js to increment a flowchart rerender token per rerender."
+}
+
+if ($js -notmatch 'if\s*\(\s*renderToken\s*!==\s*flowchartRenderToken\s*\)\s*\{\s*return;\s*\}') {
+    throw "Expected script.js to ignore stale overlapping flowchart rerenders."
 }
 
 Write-Host "Static site smoke test passed."

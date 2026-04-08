@@ -264,6 +264,7 @@ langButtons.forEach(btn => {
 
 // Interactive Mermaid Flowchart Logic
 let flowchartState = null;
+let flowchartRenderToken = 0;
 const workflowDiagram = window.WorkflowDiagram || {};
 const createFlowchartState = workflowDiagram.createFlowchartState;
 const transitionFlowchartState = workflowDiagram.transitionFlowchartState;
@@ -304,11 +305,18 @@ window.renderMainFlowchart = async function() {
 
 async function rerenderFlowchart() {
     const shell = document.getElementById('flowchart-shell');
+    const renderToken = ++flowchartRenderToken;
     shell?.classList.add('is-transitioning');
-    await renderMainFlowchart();
-    requestAnimationFrame(() => {
-        shell?.classList.remove('is-transitioning');
-    });
+    try {
+        await renderMainFlowchart();
+    } finally {
+        requestAnimationFrame(() => {
+            if (renderToken !== flowchartRenderToken) {
+                return;
+            }
+            shell?.classList.remove('is-transitioning');
+        });
+    }
 }
 
 document.getElementById('flowchart-back-btn')?.addEventListener('click', function() {

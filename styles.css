@@ -533,9 +533,10 @@ main {
     background: var(--mist);
     border: 2px dashed var(--navy);
     display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
+    align-items: flex-start;
+    justify-content: flex-start;
+    overflow: auto;
+    overscroll-behavior: contain;
 }
 
 .flowchart-shell.is-detail .flowchart-frame {
@@ -543,7 +544,8 @@ main {
 }
 
 .flowchart-stage {
-    width: 100%;
+    width: max-content;
+    min-width: 100%;
     opacity: 1;
     transform: translateY(0);
     transition: opacity 180ms ease, transform 180ms ease;
