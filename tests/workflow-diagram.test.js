@@ -87,6 +87,10 @@ assert.deepStrictEqual(
     getFlowchartActionFromClassName('node default nodeOverviewImu'),
     { type: 'open-detail', lane: 'imu' }
 );
+assert.deepStrictEqual(
+    getFlowchartActionFromClassName('node default nodeOverviewImu nodeImu'),
+    { type: 'expand', expandedFlow: 'imu' }
+);
 
 assert.deepStrictEqual(
     getFlowchartActionFromClassName('node default nodeLaneBle'),
@@ -129,6 +133,7 @@ assert.match(overviewDefinition, /nodeOverviewDsp/);
 assert.match(overviewDefinition, /nodeImu/);
 assert.match(overviewDefinition, /nodeDsp/);
 assert.match(overviewDefinition, /nodeBle/);
+assert.match(overviewDefinition, /class Imu nodeOverviewImu,nodeImu;/);
 assert.notStrictEqual(overviewStateDefinition, overviewDefinition);
 assert.match(overviewStoryDefinition, /graph LR;/);
 assert.match(overviewStoryDefinition, /Boot/);
