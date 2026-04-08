@@ -13,6 +13,16 @@ assert.deepStrictEqual(overviewState, {
     openLanes: { imu: false, dsp: false, ble: false }
 });
 
+assert.deepStrictEqual(createFlowchartState(null), overviewState);
+
+assert.deepStrictEqual(
+    transitionFlowchartState(null, { type: 'open-detail', lane: 'imu' }),
+    {
+        mode: 'detail',
+        openLanes: { imu: true, dsp: false, ble: false }
+    }
+);
+
 const detailState = transitionFlowchartState(
     overviewState,
     { type: 'open-detail', lane: 'imu' }

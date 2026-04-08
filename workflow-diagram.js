@@ -38,14 +38,16 @@
     }
 
     function createFlowchartState(overrides = {}) {
+        const normalizedOverrides = overrides || {};
+
         return defineSelectedLane({
-            mode: overrides.mode === 'detail' ? 'detail' : 'overview',
+            mode: normalizedOverrides.mode === 'detail' ? 'detail' : 'overview',
             openLanes: {
-                imu: Boolean(overrides.openLanes?.imu),
-                dsp: Boolean(overrides.openLanes?.dsp),
-                ble: Boolean(overrides.openLanes?.ble)
+                imu: Boolean(normalizedOverrides.openLanes?.imu),
+                dsp: Boolean(normalizedOverrides.openLanes?.dsp),
+                ble: Boolean(normalizedOverrides.openLanes?.ble)
             }
-        }, overrides[SELECTED_LANE_KEY]);
+        }, normalizedOverrides[SELECTED_LANE_KEY]);
     }
 
     function transitionFlowchartState(state, action) {
