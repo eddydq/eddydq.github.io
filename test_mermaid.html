@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head>
+<body>
+    <div class="mermaid">
+graph TD;
+Init(("Boot")) --> I2C[I2C Init]:::nodeImu;
+
+        subgraph IMU_Sub [IMU Integration]
+            direction TD
+            IMU_Close((" - ")):::closeBtn
+            Start_IMU(("Start Driver")) --> Type{Sensor Type?};
+            Type -->|LIS3DH| InitL[Write CTRL_REG1];
+            InitL --> CfgL[Set ODR & Range];
+            CfgL --> IntL[Enable INT1];
+            IntL --> LoopL(("Wait INT1"));
+            Type -->|MPU6050| InitM[Write PWR_MGMT_1];
+            InitM --> CfgM[Set LPF & Rate];
+            CfgM --> LoopM(("Timer Polling"));
+            Type -->|Polar| Scan[Scan Polar];
+            Scan --> ConnectP[Connect MAC];
+            ConnectP --> Notif[Enable Notifications];
+            Notif --> LoopP(("Wait BLE Evt"));
+        end
+        I2C --> Start_IMU;
+        
+        BLE[BLE Stack Init]:::nodeBle --> Adv[Start Advertising]:::nodeBle;
+        Adv --> Connect{Connected?};
+        Connect -->|Yes| CSCP[Start CSCP Notif]:::nodeBle;
+        Connect -->|No| Adv;
+        
+LoopL --> BLE;
+LoopM --> BLE;
+LoopP --> BLE;
+
+CSCP --> Sleep[Extended Sleep];
+Sleep -->|Timer/INT| Wake[Wakeup & Read IMU]:::nodeImu;
+Wake --> DSP;
+DSP[Run DSP Pipeline]:::nodeDsp;
+DSP --> Send[Notify Cadence];
+Send --> Sleep;
+
+style IMU_Sub fill:transparent,stroke:#172b45,stroke-width:2px,stroke-dasharray: 5 5;
+    </div>
+</body>
+</html>
