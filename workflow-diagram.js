@@ -228,6 +228,27 @@
         if (hasClassToken(className, 'laneCloseBle')) {
             return { type: 'collapse-lane', lane: 'ble' };
         }
+        if (hasClassToken(className, 'closeBtn')) {
+            return { type: 'collapse' };
+        }
+        if (hasClassToken(className, 'nodeImu')) {
+            return {
+                type: 'expand',
+                expandedFlow: 'imu'
+            };
+        }
+        if (hasClassToken(className, 'nodeBle')) {
+            return {
+                type: 'expand',
+                expandedFlow: 'ble'
+            };
+        }
+        if (hasClassToken(className, 'nodeDsp')) {
+            return {
+                type: 'expand',
+                expandedFlow: 'dsp'
+            };
+        }
         if (hasClassToken(className, 'nodeDspFlow')) {
             return {
                 type: 'navigate',

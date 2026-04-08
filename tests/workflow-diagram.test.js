@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 
 const {
     createFlowchartState,
+    buildMainFlowchartDefinition,
     transitionFlowchartState,
     getFlowchartActionFromClassName
 } = require('../workflow-diagram.js');
@@ -68,4 +69,31 @@ assert.deepStrictEqual(
 assert.deepStrictEqual(
     getFlowchartActionFromClassName('node default detailBack'),
     { type: 'back-overview' }
+);
+
+const overviewDefinition = buildMainFlowchartDefinition();
+
+assert.match(overviewDefinition, /nodeImu/);
+assert.match(overviewDefinition, /nodeBle/);
+assert.match(overviewDefinition, /nodeDsp/);
+assert.match(overviewDefinition, /closeBtn/);
+
+assert.deepStrictEqual(
+    getFlowchartActionFromClassName('node default nodeImu'),
+    { type: 'expand', expandedFlow: 'imu' }
+);
+
+assert.deepStrictEqual(
+    getFlowchartActionFromClassName('node default nodeBle'),
+    { type: 'expand', expandedFlow: 'ble' }
+);
+
+assert.deepStrictEqual(
+    getFlowchartActionFromClassName('node default nodeDsp'),
+    { type: 'expand', expandedFlow: 'dsp' }
+);
+
+assert.deepStrictEqual(
+    getFlowchartActionFromClassName('node default closeBtn'),
+    { type: 'collapse' }
 );
