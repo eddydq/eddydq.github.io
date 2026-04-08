@@ -35,6 +35,11 @@ try {
             analysis/c_runtime/pp_graph_validate.c `
             analysis/c_runtime/pp_graph_schedule.c `
             analysis/c_runtime/pp_runtime.c `
+            analysis/c_blocks/pp_block_catalog.c `
+            analysis/c_blocks/representation/pp_block_select_axis.c `
+            analysis/c_blocks/estimation/pp_block_autocorrelation.c `
+            analysis/c_blocks/validation/pp_block_spm_range_gate.c `
+            analysis/c_blocks/suivi/pp_block_kalman_2d.c `
             analysis/wasm/pp_runtime_node_smoke.c `
             -Ianalysis/c_api `
             -o analysis/wasm/runtime-smoke.mjs
