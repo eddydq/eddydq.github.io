@@ -574,6 +574,11 @@ typedef struct pp_runtime_result_s {
     const char *message;
 } pp_runtime_result_t;
 
+typedef struct pp_runtime_output_packet_s {
+    const char *binding_name;
+    pp_packet_t packet;
+} pp_runtime_output_packet_t;
+
 typedef pp_runtime_result_t (*pp_block_run_fn)(
     const pp_packet_t *inputs,
     size_t input_count,
@@ -592,7 +597,14 @@ typedef struct pp_block_descriptor_s {
 const pp_block_descriptor_t *pp_find_block_descriptor(const char *block_id);
 pp_runtime_result_t pp_graph_validate(const pp_graph_t *graph);
 pp_runtime_result_t pp_graph_build_schedule(const pp_graph_t *graph, size_t *ordered_indexes, size_t ordered_capacity);
-pp_runtime_result_t pp_runtime_run(const pp_graph_t *graph, const pp_packet_t *input_packets, size_t input_count);
+pp_runtime_result_t pp_runtime_run(
+    const pp_graph_t *graph,
+    const pp_packet_t *input_packets,
+    size_t input_count,
+    pp_runtime_output_packet_t *output_packets,
+    size_t output_capacity,
+    size_t *output_count
+);
 
 #endif
 ```
@@ -844,7 +856,14 @@ pp_runtime_result_t pp_graph_build_schedule(const pp_graph_t *graph, size_t *ord
 ```c
 #include "../c_api/pp_runtime.h"
 
-pp_runtime_result_t pp_runtime_run(const pp_graph_t *graph, const pp_packet_t *input_packets, size_t input_count) {
+pp_runtime_result_t pp_runtime_run(
+    const pp_graph_t *graph,
+    const pp_packet_t *input_packets,
+    size_t input_count,
+    pp_runtime_output_packet_t *output_packets,
+    size_t output_capacity,
+    size_t *output_count
+) {
     size_t order[64] = {0};
     pp_runtime_result_t status = pp_graph_validate(graph);
     if (status.status != PP_RUNTIME_OK) {
@@ -856,10 +875,11 @@ pp_runtime_result_t pp_runtime_run(const pp_graph_t *graph, const pp_packet_t *i
         return status;
     }
 
-    if (input_count == 0 || input_packets == NULL) {
+    if (input_count == 0 || input_packets == NULL || output_packets == NULL || output_count == NULL || output_capacity == 0) {
         return (pp_runtime_result_t){ PP_RUNTIME_INVALID_GRAPH, "no input packets supplied" };
     }
 
+    *output_count = 0;
     return (pp_runtime_result_t){ PP_RUNTIME_OK, "ok" };
 }
 ```
@@ -893,12 +913,14 @@ int main(void) {
     size_t order[8] = {0};
     pp_runtime_result_t ok_validate = pp_graph_validate(&ok_graph);
     pp_runtime_result_t cycle_validate = pp_graph_build_schedule(&cycle_graph, order, 8);
-    pp_runtime_result_t run_result = pp_runtime_run(&ok_graph, &input, 1);
+    pp_runtime_output_packet_t output_packets[4] = {0};
+    size_t output_count = 0;
+    pp_runtime_result_t run_result = pp_runtime_run(&ok_graph, &input, 1, output_packets, 4, &output_count);
 
     printf("{\"validate_ok\":%s,\"cycle_detected\":%s,\"state_ok\":%s}\n",
         ok_validate.status == PP_RUNTIME_OK ? "true" : "false",
         cycle_validate.status == PP_RUNTIME_INVALID_GRAPH ? "true" : "false",
-        run_result.status == PP_RUNTIME_OK ? "true" : "false");
+        run_result.status == PP_RUNTIME_OK && output_count == 0 ? "true" : "false");
     return 0;
 }
 ```
@@ -942,6 +964,7 @@ git commit -m "feat(flow): add native runtime validator and scheduler"
 - Create: `analysis/c_blocks/validation/pp_block_spm_range_gate.c`
 - Create: `analysis/c_blocks/suivi/pp_block_kalman_2d.c`
 - Create: `analysis/tests/analysis_c_vertical_slice_parity_test.py`
+- Modify: `analysis/c_runtime/pp_runtime.c`
 - Modify: `analysis/wasm/pp_runtime_node_smoke.c`
 - Modify: `analysis/wasm/build-runtime.ps1`
 
@@ -1072,6 +1095,30 @@ static pp_runtime_result_t run_select_axis(const pp_packet_t *inputs, size_t inp
     *output_count = 1;
     return (pp_runtime_result_t){ PP_RUNTIME_OK, "ok" };
 }
+
+static const pp_packet_kind_t SELECT_AXIS_INPUT_KINDS[] = { PP_PACKET_RAW_WINDOW };
+static const pp_input_port_def_t SELECT_AXIS_INPUTS[] = {
+    { "source", SELECT_AXIS_INPUT_KINDS, 1, PP_PORT_ONE }
+};
+static const pp_output_port_def_t SELECT_AXIS_OUTPUTS[] = {
+    { "primary", PP_PACKET_SERIES }
+};
+
+const pp_block_descriptor_t PP_BLOCK_SELECT_AXIS = {
+    .manifest = {
+        .block_id = "representation.select_axis",
+        .group_name = "representation",
+        .input_ports = SELECT_AXIS_INPUTS,
+        .input_port_count = 1,
+        .output_ports = SELECT_AXIS_OUTPUTS,
+        .output_port_count = 1,
+        .params = NULL,
+        .param_count = 0,
+        .stateful = 0
+    },
+    .state_size = 0,
+    .run = run_select_axis
+};
 ```
 
 `analysis/c_blocks/estimation/pp_block_autocorrelation.c`
@@ -1110,6 +1157,30 @@ static pp_runtime_result_t run_autocorrelation(const pp_packet_t *inputs, size_t
     *output_count = 1;
     return (pp_runtime_result_t){ PP_RUNTIME_OK, "ok" };
 }
+
+static const pp_packet_kind_t AUTOCORR_INPUT_KINDS[] = { PP_PACKET_SERIES };
+static const pp_input_port_def_t AUTOCORR_INPUTS[] = {
+    { "source", AUTOCORR_INPUT_KINDS, 1, PP_PORT_ONE }
+};
+static const pp_output_port_def_t AUTOCORR_OUTPUTS[] = {
+    { "primary", PP_PACKET_CANDIDATE }
+};
+
+const pp_block_descriptor_t PP_BLOCK_AUTOCORRELATION = {
+    .manifest = {
+        .block_id = "estimation.autocorrelation",
+        .group_name = "estimation",
+        .input_ports = AUTOCORR_INPUTS,
+        .input_port_count = 1,
+        .output_ports = AUTOCORR_OUTPUTS,
+        .output_port_count = 1,
+        .params = NULL,
+        .param_count = 0,
+        .stateful = 0
+    },
+    .state_size = 0,
+    .run = run_autocorrelation
+};
 ```
 
 `analysis/c_blocks/validation/pp_block_spm_range_gate.c`
@@ -1133,6 +1204,31 @@ static pp_runtime_result_t run_spm_range_gate(const pp_packet_t *inputs, size_t 
     }
     return (pp_runtime_result_t){ PP_RUNTIME_OK, "ok" };
 }
+
+static const pp_packet_kind_t RANGE_GATE_INPUT_KINDS[] = { PP_PACKET_CANDIDATE };
+static const pp_input_port_def_t RANGE_GATE_INPUTS[] = {
+    { "source", RANGE_GATE_INPUT_KINDS, 1, PP_PORT_ONE }
+};
+static const pp_output_port_def_t RANGE_GATE_OUTPUTS[] = {
+    { "accepted", PP_PACKET_CANDIDATE },
+    { "rejected", PP_PACKET_CANDIDATE }
+};
+
+const pp_block_descriptor_t PP_BLOCK_SPM_RANGE_GATE = {
+    .manifest = {
+        .block_id = "validation.spm_range_gate",
+        .group_name = "validation",
+        .input_ports = RANGE_GATE_INPUTS,
+        .input_port_count = 1,
+        .output_ports = RANGE_GATE_OUTPUTS,
+        .output_port_count = 2,
+        .params = NULL,
+        .param_count = 0,
+        .stateful = 0
+    },
+    .state_size = 0,
+    .run = run_spm_range_gate
+};
 ```
 
 `analysis/c_blocks/suivi/pp_block_kalman_2d.c`
@@ -1185,6 +1281,30 @@ static pp_runtime_result_t run_kalman_2d(const pp_packet_t *inputs, size_t input
     *output_count = 1;
     return (pp_runtime_result_t){ PP_RUNTIME_OK, "ok" };
 }
+
+static const pp_packet_kind_t KALMAN_INPUT_KINDS[] = { PP_PACKET_CANDIDATE };
+static const pp_input_port_def_t KALMAN_INPUTS[] = {
+    { "source", KALMAN_INPUT_KINDS, 1, PP_PORT_ONE }
+};
+static const pp_output_port_def_t KALMAN_OUTPUTS[] = {
+    { "primary", PP_PACKET_ESTIMATE }
+};
+
+const pp_block_descriptor_t PP_BLOCK_KALMAN_2D = {
+    .manifest = {
+        .block_id = "suivi.kalman_2d",
+        .group_name = "suivi",
+        .input_ports = KALMAN_INPUTS,
+        .input_port_count = 1,
+        .output_ports = KALMAN_OUTPUTS,
+        .output_port_count = 1,
+        .params = NULL,
+        .param_count = 0,
+        .stateful = 1
+    },
+    .state_size = sizeof(pp_kalman_state_t),
+    .run = run_kalman_2d
+};
 ```
 
 `analysis/c_blocks/pp_block_catalog.c`
@@ -1216,7 +1336,123 @@ const pp_block_descriptor_t *pp_find_block_descriptor(const char *block_id) {
 }
 ```
 
-Update `analysis/wasm/pp_runtime_node_smoke.c` so the `vertical-slice` CLI mode emits the C runtime output as JSON.
+Replace `analysis/c_runtime/pp_runtime.c` with a real scheduled executor for the vertical slice:
+
+```c
+#include <string.h>
+
+#include "../c_api/pp_runtime.h"
+
+typedef struct pp_node_result_s {
+    char node_id[16];
+    pp_packet_t packets[4];
+    size_t packet_count;
+} pp_node_result_t;
+
+static int refs_node(const char *ref, const char *node_id) {
+    size_t len = strlen(node_id);
+    return strncmp(ref, node_id, len) == 0 && ref[len] == '.';
+}
+
+pp_runtime_result_t pp_runtime_run(
+    const pp_graph_t *graph,
+    const pp_packet_t *input_packets,
+    size_t input_count,
+    pp_runtime_output_packet_t *output_packets,
+    size_t output_capacity,
+    size_t *output_count
+) {
+    size_t order[64] = {0};
+    pp_node_result_t node_results[16] = {0};
+    unsigned char state_store[16][256] = {{0}};
+    pp_runtime_result_t status = pp_graph_validate(graph);
+    if (status.status != PP_RUNTIME_OK) return status;
+
+    status = pp_graph_build_schedule(graph, order, 64);
+    if (status.status != PP_RUNTIME_OK) return status;
+
+    *output_count = 0;
+
+    for (size_t s = 0; s < graph->node_count; s += 1) {
+        const pp_node_t *node = &graph->nodes[order[s]];
+        const pp_block_descriptor_t *descriptor = pp_find_block_descriptor(node->block_id);
+        pp_packet_t bound_inputs[4] = {0};
+        size_t bound_input_count = 0;
+        pp_packet_t produced[4] = {0};
+        size_t produced_count = 0;
+
+        if (!descriptor) {
+            return (pp_runtime_result_t){ PP_RUNTIME_UNKNOWN_BLOCK, "unknown block id" };
+        }
+
+        for (size_t e = 0; e < graph->connection_count; e += 1) {
+            if (!refs_node(graph->connections[e].target_ref, node->node_id)) continue;
+
+            if (strncmp(graph->connections[e].source_ref, "input.", 6) == 0) {
+                if (input_count == 0) return (pp_runtime_result_t){ PP_RUNTIME_INVALID_GRAPH, "missing graph input packets" };
+                bound_inputs[bound_input_count++] = input_packets[0];
+                continue;
+            }
+
+            for (size_t r = 0; r < graph->node_count; r += 1) {
+                if (refs_node(graph->connections[e].source_ref, node_results[r].node_id) && node_results[r].packet_count > 0) {
+                    bound_inputs[bound_input_count++] = node_results[r].packets[0];
+                    break;
+                }
+            }
+        }
+
+        status = descriptor->run(
+            bound_inputs,
+            bound_input_count,
+            node->params_json,
+            descriptor->state_size > 0 ? state_store[order[s]] : NULL,
+            produced,
+            &produced_count
+        );
+        if (status.status != PP_RUNTIME_OK) return status;
+
+        strncpy(node_results[order[s]].node_id, node->node_id, sizeof(node_results[order[s]].node_id) - 1);
+        memcpy(node_results[order[s]].packets, produced, sizeof(pp_packet_t) * produced_count);
+        node_results[order[s]].packet_count = produced_count;
+    }
+
+    for (size_t i = 0; i < graph->output_count && *output_count < output_capacity; i += 1) {
+        for (size_t r = 0; r < graph->node_count; r += 1) {
+            if (refs_node(graph->outputs[i].source_ref, node_results[r].node_id) && node_results[r].packet_count > 0) {
+                output_packets[*output_count].binding_name = graph->outputs[i].name;
+                output_packets[*output_count].packet = node_results[r].packets[0];
+                *output_count += 1;
+                break;
+            }
+        }
+    }
+
+    return (pp_runtime_result_t){ PP_RUNTIME_OK, "ok" };
+}
+```
+
+Replace the `runtime-node` target in `analysis/wasm/build-runtime.ps1` so it actually compiles the new blocks and catalog:
+
+```powershell
+if ($Target -eq 'runtime-node') {
+    & $emcc `
+        analysis/c_runtime/pp_graph_validate.c `
+        analysis/c_runtime/pp_graph_schedule.c `
+        analysis/c_runtime/pp_runtime.c `
+        analysis/c_blocks/pp_block_catalog.c `
+        analysis/c_blocks/representation/pp_block_select_axis.c `
+        analysis/c_blocks/estimation/pp_block_autocorrelation.c `
+        analysis/c_blocks/validation/pp_block_spm_range_gate.c `
+        analysis/c_blocks/suivi/pp_block_kalman_2d.c `
+        analysis/wasm/pp_runtime_node_smoke.c `
+        -Ianalysis/c_api `
+        -o analysis/wasm/runtime-smoke.mjs
+    exit $LASTEXITCODE
+}
+```
+
+Update `analysis/wasm/pp_runtime_node_smoke.c` so the `vertical-slice` CLI mode emits the runtime outputs as JSON by calling `pp_runtime_run(...)` with an output buffer and serializing the `final` binding.
 
 - [ ] **Step 4: Run the parity test to verify it passes or skips**
 
@@ -1272,6 +1508,7 @@ Expected: process exits non-zero because `flow-catalog.js` and `assets/flow-bloc
 
 ```c
 #include <stdio.h>
+#include <string.h>
 
 #include "../c_api/pp_runtime.h"
 
@@ -1281,6 +1518,7 @@ extern const pp_block_descriptor_t PP_BLOCK_SPM_RANGE_GATE;
 extern const pp_block_descriptor_t PP_BLOCK_KALMAN_2D;
 
 static char g_catalog_json[8192];
+static char g_result_json[8192];
 
 const char *pp_wasm_catalog_json(void) {
     snprintf(
@@ -1299,7 +1537,53 @@ const char *pp_wasm_catalog_json(void) {
     );
     return g_catalog_json;
 }
+
+int pp_wasm_run_graph_json(const char *graph_json, const char *inputs_json) {
+    pp_node_t nodes[16] = {0};
+    pp_connection_t connections[32] = {0};
+    pp_output_binding_t outputs[16] = {0};
+    pp_packet_t input_packets[8] = {0};
+    pp_runtime_output_packet_t result_packets[16] = {0};
+    pp_graph_t graph = {0};
+    size_t output_count = 0;
+    pp_runtime_result_t status;
+
+    if (!pp_parse_graph_json(graph_json, &graph, nodes, connections, outputs)) {
+        snprintf(g_result_json, sizeof(g_result_json), "{\"error\":\"failed to parse graph json\"}");
+        return 1;
+    }
+
+    if (!pp_parse_input_packets_json(inputs_json, input_packets, 8)) {
+        snprintf(g_result_json, sizeof(g_result_json), "{\"error\":\"failed to parse input json\"}");
+        return 2;
+    }
+
+    status = pp_runtime_run(&graph, input_packets, 1, result_packets, 16, &output_count);
+    if (status.status != PP_RUNTIME_OK) {
+        snprintf(g_result_json, sizeof(g_result_json), "{\"error\":\"%s\"}", status.message);
+        return (int)status.status;
+    }
+
+    pp_format_run_result_json(result_packets, output_count, g_result_json, sizeof(g_result_json));
+    return 0;
+}
+
+const char *pp_wasm_last_result_json(void) {
+    return g_result_json;
+}
 ```
+
+The same file must also define the three helpers used above:
+
+- `pp_parse_graph_json(...)`
+  - parse the schema-v2 `nodes`, `connections`, and `outputs` arrays generated by `flow-graph.js`
+  - allocate into caller-owned `nodes`, `connections`, and `outputs` buffers
+- `pp_parse_input_packets_json(...)`
+  - parse the browser-provided packet array into `pp_packet_t` structs
+- `pp_format_run_result_json(...)`
+  - serialize `pp_runtime_output_packet_t` results and diagnostics back into `g_result_json`
+
+For the first implementation, keep the parser strict and support only the JSON shape emitted by the builder. That avoids introducing a general-purpose JSON dependency while still making browser execution real rather than stubbed.
 
 `analysis/wasm/extract-catalog.mjs`
 
@@ -1381,8 +1665,10 @@ if ($Target -eq 'browser') {
         analysis/wasm/pp_wasm_exports.c `
         -Ianalysis/c_api `
         -o assets/flow-runtime.js `
-        -sEXPORTED_FUNCTIONS=_pp_wasm_catalog_json `
-        -sEXPORTED_RUNTIME_METHODS=UTF8ToString
+        -sMODULARIZE=1 `
+        -sEXPORT_NAME=createFlowRuntimeModule `
+        -sEXPORTED_FUNCTIONS=_pp_wasm_catalog_json,_pp_wasm_run_graph_json,_pp_wasm_last_result_json,_malloc,_free `
+        -sEXPORTED_RUNTIME_METHODS=UTF8ToString,stringToUTF8,lengthBytesUTF8
     exit $LASTEXITCODE
 }
 
@@ -1399,8 +1685,10 @@ if ($Target -eq 'catalog') {
         analysis/wasm/pp_wasm_exports.c `
         -Ianalysis/c_api `
         -o analysis/wasm/runtime-catalog-node.mjs `
+        -sMODULARIZE=1 `
+        -sEXPORT_NAME=createFlowRuntimeModule `
         -sENVIRONMENT=node `
-        -sEXPORTED_FUNCTIONS=_pp_wasm_catalog_json `
+        -sEXPORTED_FUNCTIONS=_pp_wasm_catalog_json,_pp_wasm_run_graph_json,_pp_wasm_last_result_json,_malloc,_free `
         -sEXPORTED_RUNTIME_METHODS=UTF8ToString
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     node analysis/wasm/extract-catalog.mjs
@@ -1532,37 +1820,54 @@ Expected: process exits non-zero with `Cannot find module '../flow-runtime-clien
 `flow-runtime-worker.js`
 
 ```javascript
-let runtimeReady = null;
+let runtimeModulePromise = null;
+
+function allocUtf8(module, value) {
+    const size = module.lengthBytesUTF8(value) + 1;
+    const ptr = module._malloc(size);
+    module.stringToUTF8(value, ptr, size);
+    return ptr;
+}
 
 async function ensureRuntime() {
-    if (!runtimeReady) {
-        runtimeReady = importScripts('assets/flow-runtime.js');
+    if (!runtimeModulePromise) {
+        importScripts('assets/flow-runtime.js');
+        runtimeModulePromise = self.createFlowRuntimeModule();
     }
-    return runtimeReady;
+    return runtimeModulePromise;
 }
 
 self.onmessage = async (event) => {
     const { requestId, type, payload } = event.data || {};
 
     try {
-        await ensureRuntime();
+        const module = await ensureRuntime();
 
         if (type === 'catalog') {
-            const response = await fetch('assets/flow-block-catalog.json');
-            const json = await response.json();
+            const pointer = module._pp_wasm_catalog_json();
+            const json = JSON.parse(module.UTF8ToString(pointer));
             self.postMessage({ requestId, ok: true, payload: json });
             return;
         }
 
         if (type === 'run') {
-            self.postMessage({
-                requestId,
-                ok: true,
-                payload: {
-                    outputs: payload.outputs || { final: [] },
-                    diagnostics: {}
+            const graphJson = JSON.stringify(payload.graph || {});
+            const inputsJson = JSON.stringify(payload.inputs || []);
+            const graphPtr = allocUtf8(module, graphJson);
+            const inputsPtr = allocUtf8(module, inputsJson);
+
+            try {
+                const status = module._pp_wasm_run_graph_json(graphPtr, inputsPtr);
+                if (status !== 0) {
+                    throw new Error(`native runtime returned status ${status}`);
                 }
-            });
+                const resultPtr = module._pp_wasm_last_result_json();
+                const result = JSON.parse(module.UTF8ToString(resultPtr));
+                self.postMessage({ requestId, ok: true, payload: result });
+            } finally {
+                module._free(graphPtr);
+                module._free(inputsPtr);
+            }
             return;
         }
 
