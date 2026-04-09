@@ -98,7 +98,11 @@ try {
             analysis/c_blocks/suivi/pp_block_kalman_2d.c `
             analysis/wasm/pp_runtime_node_smoke.c `
             -Ianalysis/c_api `
-            -o analysis/wasm/runtime-smoke.mjs
+            -o analysis/wasm/runtime-smoke.generated.mjs `
+            -sMODULARIZE=1 `
+            -sEXPORT_NAME=createRuntimeSmokeModule `
+            -sENVIRONMENT=node `
+            -sSTACK_SIZE=262144
         exit $LASTEXITCODE
     }
 
