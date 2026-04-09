@@ -745,6 +745,8 @@ Expected:
 
 - [ ] **Step 3: Implement graph validation, scheduling, and the runtime smoke harness**
 
+Note: in this task, `analysis/c_runtime/pp_runtime.c` is only a temporary smoke-harness stub so Task 3 can verify validation, scheduling, and the Node build target in isolation. Task 4 explicitly replaces this stub with the first real execution loop.
+
 `analysis/c_runtime/pp_graph_validate.c`
 
 ```c
@@ -1820,6 +1822,8 @@ git commit -m "feat(flow): export native block catalog"
 - Modify: `analysis/wasm/build-runtime.ps1`
 
 - [ ] **Step 1: Write the failing runtime-client test**
+
+Note: the `fakeWorker` below is a test double used only to verify the client request/response contract before the real worker exists. It is not the browser execution path; the actual WASM-backed worker is implemented in Step 3.
 
 ```javascript
 const assert = require('node:assert/strict');
