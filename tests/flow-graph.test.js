@@ -217,3 +217,39 @@ assert.equal(
     validateGraph(cycleGraph, catalog).some(error => /cycle/i.test(error)),
     true
 );
+
+const unconstrainedCatalog = {
+    'representation.vector_magnitude': {
+        input_ports: [],
+        output_ports: [{ name: 'primary', kind: 'series' }]
+    }
+};
+
+assert.equal(
+    validateGraph(createGraphState({
+        nodes: Array.from({ length: 17 }, (_, index) => ({
+            node_id: `n${index}`,
+            block_id: 'representation.vector_magnitude',
+            params: {}
+        })),
+        connections: [],
+        outputs: {}
+    }), unconstrainedCatalog).some(error => /graph capacity|max nodes|16/i.test(error)),
+    true
+);
+
+assert.equal(
+    validateGraph(createGraphState({
+        nodes: Array.from({ length: 16 }, (_, index) => ({
+            node_id: `n${index}`,
+            block_id: 'representation.vector_magnitude',
+            params: {}
+        })),
+        connections: Array.from({ length: 21 }, (_, index) => ({
+            source: `n${index % 16}.primary`,
+            target: `n${index % 16}.primary`
+        })),
+        outputs: {}
+    }), unconstrainedCatalog).some(error => /graph capacity|max edges|20/i.test(error)),
+    true
+);

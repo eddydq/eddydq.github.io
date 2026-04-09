@@ -14,6 +14,8 @@
         candidate: 'port-kind-candidate',
         estimate: 'port-kind-estimate'
     };
+    const FIRMWARE_MAX_NODES = 16;
+    const FIRMWARE_MAX_EDGES = 20;
     const SYSTEM_INPUT_KINDS = {
         raw: 'raw_window',
         series: 'series',
@@ -187,6 +189,14 @@
 
         if (!graph || graph.schema_version !== SCHEMA_VERSION) {
             errors.push(`unsupported schema version: ${graph && graph.schema_version}`);
+        }
+
+        if (state.nodes.length > FIRMWARE_MAX_NODES) {
+            errors.push(`graph capacity exceeded: max nodes ${FIRMWARE_MAX_NODES}`);
+        }
+
+        if (state.connections.length > FIRMWARE_MAX_EDGES) {
+            errors.push(`graph capacity exceeded: max edges ${FIRMWARE_MAX_EDGES}`);
         }
 
         for (const node of state.nodes) {

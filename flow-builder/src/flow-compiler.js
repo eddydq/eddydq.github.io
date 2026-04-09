@@ -10,6 +10,8 @@
     const PP_MAGIC = 0x5050;
     const PP_VERSION = 1;
     const HEADER_SIZE = 12;
+    const FIRMWARE_MAX_NODES = 16;
+    const FIRMWARE_MAX_EDGES = 20;
 
     const BLOCK_IDS = {
         'source.lis3dh': 0x01,
@@ -53,6 +55,8 @@
     const PORT_INDEX = {
         source: 0,
         primary: 0,
+        candidate: 0,
+        series: 1,
         accepted: 0,
         rejected: 1,
         final: 0
@@ -195,6 +199,14 @@
         return { nodeId: value.slice(0, dotIndex), port: value.slice(dotIndex + 1) };
     }
 
+    function resolvePortIndex(refPort, socketIndex) {
+        if (refPort && Object.prototype.hasOwnProperty.call(PORT_INDEX, refPort)) {
+            return PORT_INDEX[refPort];
+        }
+
+        return Number.isInteger(socketIndex) ? socketIndex : 0;
+    }
+
     function normalizeGraph(graph) {
         const nodes = (graph.nodes || []).map((node, index) => ({
             source: node,
@@ -229,13 +241,9 @@
                 }
                 edges.push({
                     src: nodeIndexById.get(source.nodeId),
-                    srcPort: Number.isInteger(connection.source_socket)
-                        ? connection.source_socket
-                        : (PORT_INDEX[source.port] || 0),
+                    srcPort: resolvePortIndex(source.port, connection.source_socket),
                     dst: nodeIndexById.get(target.nodeId),
-                    dstPort: Number.isInteger(connection.target_socket)
-                        ? connection.target_socket
-                        : (PORT_INDEX[target.port] || 0)
+                    dstPort: resolvePortIndex(target.port, connection.target_socket)
                 });
             }
         }
@@ -268,6 +276,14 @@
 
         if (graph.nodes.length > 255 || graph.edges.length > 255) {
             throw new Error('graph is too large for protocol header');
+        }
+
+        if (graph.nodes.length > FIRMWARE_MAX_NODES) {
+            throw new Error(`firmware graph capacity exceeded: max nodes ${FIRMWARE_MAX_NODES}`);
+        }
+
+        if (graph.edges.length > FIRMWARE_MAX_EDGES) {
+            throw new Error(`firmware graph capacity exceeded: max edges ${FIRMWARE_MAX_EDGES}`);
         }
 
         for (const node of graph.nodes) {

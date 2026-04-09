@@ -75,6 +75,85 @@ function test_crc_integrity() {
     console.log('  PASS: test_crc_integrity');
 }
 
+function parseTlvs(binary) {
+    const tlvs = [];
+    let offset = 12;
+
+    while (offset < binary.length) {
+        const tag = binary[offset];
+        const length = binary[offset + 1];
+        const value = Array.from(binary.slice(offset + 2, offset + 2 + length));
+        tlvs.push({ tag, length, value });
+        offset += 2 + length;
+    }
+
+    return tlvs;
+}
+
+function test_named_refs_override_misleading_socket_metadata() {
+    const graph = {
+        nodes: [
+            { node_id: 'n1', block_id: 'representation.select_axis', params: { axis: 'z' } },
+            { node_id: 'n2', block_id: 'validation.peak_selector', params: { min_prominence: 4, min_distance: 2 } }
+        ],
+        connections: [
+            { source: 'input.raw', source_socket: 0, target: 'n1.source', target_socket: 0 },
+            { source: 'n1.primary', source_socket: 1, target: 'n2.series', target_socket: 0 }
+        ],
+        outputs: { final: 'n2.primary' }
+    };
+
+    const binary = compileGraph(graph);
+    const edgeTlvs = parseTlvs(binary).filter(tlv => tlv.tag === 0x02);
+
+    assert.equal(edgeTlvs.length, 1);
+    assert.deepStrictEqual(edgeTlvs[0].value, [0, 0, 1, 1]);
+    console.log('  PASS: test_named_refs_override_misleading_socket_metadata');
+}
+
+function test_compile_rejects_graphs_over_firmware_node_capacity() {
+    const graph = {
+        nodes: Array.from({ length: 17 }, (_, index) => ({
+            node_id: `n${index}`,
+            block_id: 'representation.vector_magnitude',
+            params: {}
+        })),
+        connections: [],
+        outputs: {}
+    };
+
+    assert.throws(
+        () => compileGraph(graph),
+        /firmware graph capacity|max nodes|16/i
+    );
+    console.log('  PASS: test_compile_rejects_graphs_over_firmware_node_capacity');
+}
+
+function test_compile_rejects_graphs_over_firmware_edge_capacity() {
+    const graph = {
+        nodes: Array.from({ length: 16 }, (_, index) => ({
+            node_id: `n${index}`,
+            block_id: 'representation.vector_magnitude',
+            params: {}
+        })),
+        edges: Array.from({ length: 21 }, (_, index) => ({
+            src: index % 16,
+            srcPort: 0,
+            dst: index % 16,
+            dstPort: 0
+        }))
+    };
+
+    assert.throws(
+        () => compileGraph(graph),
+        /firmware graph capacity|max edges|20/i
+    );
+    console.log('  PASS: test_compile_rejects_graphs_over_firmware_edge_capacity');
+}
+
 test_minimal_pipeline();
 test_crc_integrity();
+test_named_refs_override_misleading_socket_metadata();
+test_compile_rejects_graphs_over_firmware_node_capacity();
+test_compile_rejects_graphs_over_firmware_edge_capacity();
 console.log('All compiler tests passed.');
