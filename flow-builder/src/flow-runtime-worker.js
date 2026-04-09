@@ -16,7 +16,11 @@ async function ensureRuntime() {
             throw new Error('createFlowRuntimeModule is not available');
         }
 
-        runtimeModulePromise = self.createFlowRuntimeModule();
+        runtimeModulePromise = self.createFlowRuntimeModule({
+            locateFile(path) {
+                return path.endsWith('.wasm') ? `../assets/${path}` : path;
+            }
+        });
     }
 
     return runtimeModulePromise;
