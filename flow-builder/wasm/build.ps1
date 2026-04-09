@@ -53,6 +53,9 @@ function Invoke-Emcc {
     ) + $ExtraArgs
 
     & emcc @args
+    if ($LASTEXITCODE -ne 0) {
+        throw "emcc failed with exit code $LASTEXITCODE"
+    }
 }
 
 function Invoke-Build {
@@ -62,6 +65,17 @@ function Invoke-Build {
 }
 
 function Invoke-Catalog {
+    $nodeRuntimePaths = @(
+        (Join-Path $PSScriptRoot 'runtime-catalog-node.mjs'),
+        (Join-Path $PSScriptRoot 'runtime-catalog-node.wasm')
+    )
+
+    foreach ($path in $nodeRuntimePaths) {
+        if (Test-Path -LiteralPath $path) {
+            Remove-Item -LiteralPath $path -Force
+        }
+    }
+
     Invoke-Emcc `
         -OutputPath $NodeRuntime `
         -ExtraArgs @(
@@ -71,6 +85,9 @@ function Invoke-Catalog {
         )
 
     & node (Join-Path $PSScriptRoot 'extract-catalog.mjs')
+    if ($LASTEXITCODE -ne 0) {
+        throw "catalog extraction failed with exit code $LASTEXITCODE"
+    }
 }
 
 function Invoke-Clean {

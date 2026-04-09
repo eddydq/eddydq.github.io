@@ -109,6 +109,45 @@ static int json_append(char *buffer, size_t capacity, size_t *offset, const char
     return 1;
 }
 
+static int json_append_string(char *buffer, size_t capacity, size_t *offset, const char *value)
+{
+    const unsigned char *p = (const unsigned char *)(value ? value : "");
+
+    if (!json_append(buffer, capacity, offset, "\"")) {
+        return 0;
+    }
+    while (*p) {
+        unsigned char c = *p++;
+
+        if (c == '"' || c == '\\') {
+            if (!json_append(buffer, capacity, offset, "\\%c", c)) {
+                return 0;
+            }
+        } else if (c == '\n') {
+            if (!json_append(buffer, capacity, offset, "\\n")) {
+                return 0;
+            }
+        } else if (c == '\r') {
+            if (!json_append(buffer, capacity, offset, "\\r")) {
+                return 0;
+            }
+        } else if (c == '\t') {
+            if (!json_append(buffer, capacity, offset, "\\t")) {
+                return 0;
+            }
+        } else if (c < 0x20U) {
+            if (!json_append(buffer, capacity, offset, "\\u%04x", (unsigned)c)) {
+                return 0;
+            }
+        } else {
+            if (!json_append(buffer, capacity, offset, "%c", c)) {
+                return 0;
+            }
+        }
+    }
+    return json_append(buffer, capacity, offset, "\"");
+}
+
 static void set_error(const char *format, ...)
 {
     va_list args;
@@ -643,6 +682,12 @@ static void split_ref(const char *ref, char *node_id, size_t node_id_size, char 
     snprintf(port_name, port_name_size, "%s", dot + 1);
 }
 
+static int ref_has_named_port(const char *ref)
+{
+    const char *dot = strchr(ref, '.');
+    return dot && dot[1] != '\0';
+}
+
 static int parse_nodes(const char *graph_json, const char *graph_end, pp_graph_t *graph, pp_wasm_node_t *nodes)
 {
     const char *array_begin;
@@ -769,6 +814,8 @@ static int parse_connection_edges(
         char src_port_name[32];
         char dst_node_id[32];
         char dst_port_name[32];
+        int source_has_named_port;
+        int target_has_named_port;
         int dst_index;
         int dst_port;
         int src_port;
@@ -797,6 +844,8 @@ static int parse_connection_edges(
             return 0;
         }
 
+        source_has_named_port = ref_has_named_port(source_ref);
+        target_has_named_port = ref_has_named_port(target_ref);
         split_ref(source_ref, src_node_id, sizeof(src_node_id), src_port_name, sizeof(src_port_name));
         split_ref(target_ref, dst_node_id, sizeof(dst_node_id), dst_port_name, sizeof(dst_port_name));
         if (strcmp(dst_node_id, "output") == 0) {
@@ -810,7 +859,9 @@ static int parse_connection_edges(
             return 0;
         }
         dst_port = port_index_by_name(nodes[dst_index].meta->input_names, 3, dst_port_name, 0);
-        dst_port = get_int_value(edge_begin, edge_end, "target_socket", dst_port);
+        if (!target_has_named_port) {
+            dst_port = get_int_value(edge_begin, edge_end, "target_socket", dst_port);
+        }
         if (dst_port < 0 || dst_port > 2) {
             set_error("connection targets an unknown input port");
             return 0;
@@ -831,7 +882,9 @@ static int parse_connection_edges(
                 return 0;
             }
             src_port = port_index_by_name(nodes[src_index].meta->output_names, 3, src_port_name, 0);
-            src_port = get_int_value(edge_begin, edge_end, "source_socket", src_port);
+            if (!source_has_named_port) {
+                src_port = get_int_value(edge_begin, edge_end, "source_socket", src_port);
+            }
             if (src_port < 0 || src_port > 2) {
                 set_error("connection sources an unknown output port");
                 return 0;
@@ -979,7 +1032,7 @@ static int parse_input_packet(const char *packet_begin, const char *packet_end, 
     memset(packet, 0, sizeof(*packet));
     packet->data = storage;
     packet->axis = PP_AXIS_ALL;
-    packet->sample_rate_hz = (uint16_t)sample_rate_hz;
+    packet->sample_rate_hz = clamp_u16(sample_rate_hz);
 
     if (strcmp(kind, "raw_window") == 0) {
         for (i = 0; i < (uint16_t)length; i++) {
@@ -1311,7 +1364,11 @@ static int serialize_run_result(
         if (i > 0U) {
             json_append(s_last_result_json, sizeof(s_last_result_json), &offset, ",");
         }
-        json_append(s_last_result_json, sizeof(s_last_result_json), &offset, "\"%s\":", bindings[i].binding_name);
+        if (!json_append_string(s_last_result_json, sizeof(s_last_result_json), &offset, bindings[i].binding_name) ||
+            !json_append(s_last_result_json, sizeof(s_last_result_json), &offset, ":")) {
+            set_error("run result JSON exceeded buffer capacity");
+            return 0;
+        }
         if (!append_packet_json(s_last_result_json, sizeof(s_last_result_json), &offset, &nodes[node_index].outputs[port_index])) {
             set_error("run result JSON exceeded buffer capacity");
             return 0;
@@ -1323,11 +1380,13 @@ static int serialize_run_result(
         if (i > 0U) {
             json_append(s_last_result_json, sizeof(s_last_result_json), &offset, ",");
         }
-        json_append(s_last_result_json, sizeof(s_last_result_json), &offset,
-            "{\"node_id\":\"%s\",\"block_id\":\"%s\",\"status\":\"%s\"}",
-            nodes[i].node_id,
-            nodes[i].meta->browser_id,
-            status_name(nodes[i].status));
+        json_append(s_last_result_json, sizeof(s_last_result_json), &offset, "{\"node_id\":");
+        json_append_string(s_last_result_json, sizeof(s_last_result_json), &offset, nodes[i].node_id);
+        json_append(s_last_result_json, sizeof(s_last_result_json), &offset, ",\"block_id\":");
+        json_append_string(s_last_result_json, sizeof(s_last_result_json), &offset, nodes[i].meta->browser_id);
+        json_append(s_last_result_json, sizeof(s_last_result_json), &offset, ",\"status\":");
+        json_append_string(s_last_result_json, sizeof(s_last_result_json), &offset, status_name(nodes[i].status));
+        json_append(s_last_result_json, sizeof(s_last_result_json), &offset, "}");
     }
     json_append(s_last_result_json, sizeof(s_last_result_json), &offset, "]}}");
 
