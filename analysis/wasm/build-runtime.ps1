@@ -76,6 +76,16 @@ try {
         exit $LASTEXITCODE
     }
 
+    if ($Target -eq 'end-to-end') {
+        & powershell -ExecutionPolicy Bypass -File analysis/wasm/build-runtime.ps1 -Target browser
+        if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+        }
+
+        & powershell -ExecutionPolicy Bypass -File analysis/wasm/build-runtime.ps1 -Target catalog
+        exit $LASTEXITCODE
+    }
+
     if ($Target -eq 'runtime-node') {
         & $emcc `
             analysis/c_runtime/pp_graph_validate.c `
