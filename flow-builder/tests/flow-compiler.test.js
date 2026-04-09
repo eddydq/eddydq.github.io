@@ -2,6 +2,25 @@ const assert = require('node:assert/strict');
 
 const { compileGraph, crc16, PP_MAGIC, PP_VERSION, BLOCK_IDS } = require('../src/flow-compiler.js');
 
+assert.deepStrictEqual(Object.keys(BLOCK_IDS), [
+    'source.lis3dh',
+    'source.mpu6050',
+    'source.polar',
+    'representation.select_axis',
+    'representation.vector_magnitude',
+    'pretraitement.hpf_gravity',
+    'pretraitement.lowpass',
+    'estimation.autocorrelation',
+    'estimation.fft_dominant',
+    'detection.adaptive_peak_detect',
+    'detection.zero_crossing_detect',
+    'validation.spm_range_gate',
+    'validation.peak_selector',
+    'validation.confidence_gate',
+    'suivi.kalman_2d',
+    'suivi.confirmation_filter'
+]);
+
 assert.equal(BLOCK_IDS['source.lis3dh'], 0x01);
 assert.equal(BLOCK_IDS['source.mpu6050'], 0x02);
 assert.equal(BLOCK_IDS['source.polar'], 0x03);
@@ -22,8 +41,8 @@ assert.equal(BLOCK_IDS['suivi.confirmation_filter'], 0x10);
 function test_minimal_pipeline() {
     const graph = {
         nodes: [
-            { id: 0, blockId: 'select_axis', params: { axis: 'z' } },
-            { id: 1, blockId: 'autocorrelation', params: { min_lag: 50, max_lag: 200, confidence_min: 30, harmonic_pct: 80 } }
+            { id: 0, blockId: 'representation.select_axis', params: { axis: 'z' } },
+            { id: 1, blockId: 'estimation.autocorrelation', params: { min_lag: 50, max_lag: 200, confidence_min: 30, harmonic_pct: 80 } }
         ],
         edges: [
             { src: 0, srcPort: 0, dst: 1, dstPort: 0 }
@@ -42,7 +61,7 @@ function test_minimal_pipeline() {
 
 function test_crc_integrity() {
     const graph = {
-        nodes: [{ id: 0, blockId: 'select_axis', params: { axis: 'x' } }],
+        nodes: [{ id: 0, blockId: 'representation.select_axis', params: { axis: 'x' } }],
         edges: []
     };
     const binary = compileGraph(graph);

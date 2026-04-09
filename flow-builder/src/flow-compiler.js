@@ -12,22 +12,6 @@
     const HEADER_SIZE = 12;
 
     const BLOCK_IDS = {
-        lis3dh_source: 0x01,
-        mpu6050_source: 0x02,
-        polar_source: 0x03,
-        select_axis: 0x04,
-        vector_magnitude: 0x05,
-        hpf_gravity: 0x06,
-        lowpass: 0x07,
-        autocorrelation: 0x08,
-        fft_dominant: 0x09,
-        adaptive_peak_detect: 0x0A,
-        zero_crossing_detect: 0x0B,
-        spm_range_gate: 0x0C,
-        peak_selector: 0x0D,
-        confidence_gate: 0x0E,
-        kalman_2d: 0x0F,
-        confirmation_filter: 0x10,
         'source.lis3dh': 0x01,
         'source.mpu6050': 0x02,
         'source.polar': 0x03,
@@ -44,6 +28,25 @@
         'validation.confidence_gate': 0x0E,
         'suivi.kalman_2d': 0x0F,
         'suivi.confirmation_filter': 0x10
+    };
+
+    const BLOCK_ALIASES = {
+        lis3dh_source: 'source.lis3dh',
+        mpu6050_source: 'source.mpu6050',
+        polar_source: 'source.polar',
+        select_axis: 'representation.select_axis',
+        vector_magnitude: 'representation.vector_magnitude',
+        hpf_gravity: 'pretraitement.hpf_gravity',
+        lowpass: 'pretraitement.lowpass',
+        autocorrelation: 'estimation.autocorrelation',
+        fft_dominant: 'estimation.fft_dominant',
+        adaptive_peak_detect: 'detection.adaptive_peak_detect',
+        zero_crossing_detect: 'detection.zero_crossing_detect',
+        spm_range_gate: 'validation.spm_range_gate',
+        peak_selector: 'validation.peak_selector',
+        confidence_gate: 'validation.confidence_gate',
+        kalman_2d: 'suivi.kalman_2d',
+        confirmation_filter: 'suivi.confirmation_filter'
     };
 
     const AXIS_IDS = { x: 0, y: 1, z: 2, mag: 3 };
@@ -86,8 +89,7 @@
         if (BLOCK_IDS[value]) {
             return value;
         }
-        const shortName = value.split('.').pop();
-        return BLOCK_IDS[shortName] ? shortName : value;
+        return BLOCK_ALIASES[value] || value;
     }
 
     function blockIdToByte(blockId) {
