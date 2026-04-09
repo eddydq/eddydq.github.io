@@ -48,22 +48,55 @@ const normalizedCatalog = {
 
 const validGraph = createGraphState({
     nodes: [
-        { node_id: 'n1', block_id: 'representation.select_axis', params: { axis: 'y', tuning: { smooth: true } } },
-        { node_id: 'n2', block_id: 'estimation.autocorrelation', params: { window: 64 } },
-        { node_id: 'n3', block_id: 'validation.consensus_band', params: { tolerance_spm: 5 } }
+        {
+            node_id: 'n1',
+            block_id: 'representation.select_axis',
+            params: { axis: 'y', tuning: { smooth: true } },
+            ui: { position: { x: 120, y: 80 } }
+        },
+        {
+            node_id: 'n2',
+            block_id: 'estimation.autocorrelation',
+            params: { window: 64 },
+            ui: { position: { x: 420, y: 120 } }
+        },
+        {
+            node_id: 'n3',
+            block_id: 'validation.consensus_band',
+            params: { tolerance_spm: 5 },
+            ui: {
+                position: { x: 720, y: 160 },
+                input_slots: { source: 3 },
+                output_slots: { accepted: 2 }
+            }
+        }
     ],
     connections: [
-        { source: 'input.raw', target: 'n1.source' },
-        { source: 'n1.primary', target: 'n2.source' },
-        { source: 'n2.primary', target: 'n3.source' },
-        { source: 'n2.primary', target: 'n3.source' }
+        { source: 'input.raw', source_socket: 0, target: 'n1.source', target_socket: 0 },
+        { source: 'n1.primary', source_socket: 0, target: 'n2.source', target_socket: 0 },
+        { source: 'n2.primary', source_socket: 0, target: 'n3.source', target_socket: 0 },
+        { source: 'n2.primary', source_socket: 1, target: 'n3.source', target_socket: 2 }
     ],
-    outputs: { accepted: 'n3.accepted' }
+    outputs: { accepted: 'n3.accepted' },
+    ui: {
+        system_nodes: {
+            input: { x: 40, y: 100 },
+            output: { x: 980, y: 180 }
+        },
+        output_bindings: {
+            accepted: { source_socket: 1 }
+        }
+    }
 });
 
 const clonedGraph = createGraphState(validGraph);
 validGraph.nodes[0].params.tuning.smooth = false;
 assert.equal(clonedGraph.nodes[0].params.tuning.smooth, true);
+validGraph.nodes[2].ui.position.x = 999;
+assert.equal(clonedGraph.nodes[2].ui.position.x, 720);
+assert.equal(clonedGraph.connections[3].target_socket, 2);
+validGraph.ui.system_nodes.input.x = 1234;
+assert.equal(clonedGraph.ui.system_nodes.input.x, 40);
 
 assert.equal(SCHEMA_VERSION, 2);
 assert.equal(PACKET_KIND_COLORS.series, 'port-kind-series');
@@ -71,6 +104,8 @@ assert.deepStrictEqual(validateGraph(validGraph, catalog), []);
 assert.deepStrictEqual(validateGraph(validGraph, normalizedCatalog), []);
 assert.deepStrictEqual(topologicallySortGraph(validGraph), ['n1', 'n2', 'n3']);
 assert.deepStrictEqual(serializeGraph(validGraph).schema_version, 2);
+assert.deepStrictEqual(serializeGraph(clonedGraph).nodes[2].ui.output_slots.accepted, 2);
+assert.deepStrictEqual(serializeGraph(clonedGraph).ui.output_bindings.accepted.source_socket, 1);
 assert.match(
     validateGraph({
         nodes: [],

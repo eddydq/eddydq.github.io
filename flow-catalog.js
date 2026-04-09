@@ -49,14 +49,43 @@
         };
     }
 
-    async function loadCatalog(fetchImpl = globalThis.fetch) {
-        if (typeof fetchImpl !== 'function') {
-            throw new Error('fetch is not available');
+    function getEmbeddedCatalog(root = globalThis) {
+        if (root && root.FLOW_EMBEDDED_CATALOG) {
+            return root.FLOW_EMBEDDED_CATALOG;
         }
 
-        const response = await fetchImpl('assets/flow-block-catalog.json');
-        const json = await response.json();
-        return normalizeCatalog(json);
+        if (root && root.FLOW_BLOCK_CATALOG) {
+            return root.FLOW_BLOCK_CATALOG;
+        }
+
+        return null;
+    }
+
+    async function loadCatalog(fetchImpl = globalThis.fetch) {
+        const embeddedCatalog = getEmbeddedCatalog();
+
+        if (typeof fetchImpl === 'function') {
+            try {
+                const response = await fetchImpl('assets/flow-block-catalog.json');
+
+                if (!response || response.ok === false) {
+                    throw new Error('catalog request failed');
+                }
+
+                const json = await response.json();
+                return normalizeCatalog(json);
+            } catch (error) {
+                if (!embeddedCatalog) {
+                    throw error;
+                }
+            }
+        }
+
+        if (embeddedCatalog) {
+            return normalizeCatalog(embeddedCatalog);
+        }
+
+        throw new Error('fetch is not available');
     }
 
     return { normalizeCatalog, loadCatalog };

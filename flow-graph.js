@@ -48,7 +48,8 @@
             schema_version: SCHEMA_VERSION,
             nodes: Array.isArray(overrides.nodes) ? overrides.nodes.map(cloneValue) : [],
             connections: Array.isArray(overrides.connections) ? overrides.connections.map(cloneValue) : [],
-            outputs: isPlainObject(overrides.outputs) ? cloneValue(overrides.outputs) : {}
+            outputs: isPlainObject(overrides.outputs) ? cloneValue(overrides.outputs) : {},
+            ui: isPlainObject(overrides.ui) ? cloneValue(overrides.ui) : {}
         };
     }
 

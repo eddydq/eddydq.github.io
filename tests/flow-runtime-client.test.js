@@ -56,6 +56,24 @@ async function main() {
         ]),
         /worker boot failed/
     );
+
+    let factoryCalls = 0;
+    const unsupportedClient = createFlowRuntimeClient({
+        workerFactory: () => {
+            factoryCalls += 1;
+            throw new Error('worker unsupported');
+        }
+    });
+
+    assert.equal(factoryCalls, 0);
+    await assert.rejects(
+        unsupportedClient.runGraph({
+            graph: { schema_version: 2, nodes: [], connections: [], outputs: {} },
+            inputs: []
+        }),
+        /worker unsupported/
+    );
+    assert.equal(factoryCalls, 1);
 }
 
 main().catch(error => {
