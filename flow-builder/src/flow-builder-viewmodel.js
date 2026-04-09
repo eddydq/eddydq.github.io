@@ -7,7 +7,7 @@
 
     root.FlowBuilderViewModel = api;
 }(typeof globalThis !== 'undefined' ? globalThis : this, function() {
-    const GROUP_ORDER = ['representation', 'pretraitement', 'estimation', 'detection', 'validation', 'suivi'];
+    const GROUP_ORDER = ['source', 'representation', 'pretraitement', 'estimation', 'detection', 'validation', 'suivi'];
     const KIND_CLASS = {
         raw_window: 'port-kind-raw-window',
         series: 'port-kind-series',

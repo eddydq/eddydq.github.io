@@ -35,6 +35,25 @@ async function main() {
     assert.equal(messages[0].type, 'catalog');
     assert.equal(messages[1].type, 'run');
 
+    const previousWorker = globalThis.Worker;
+    let createdWorkerUrl = null;
+    try {
+        globalThis.Worker = function Worker(url) {
+            createdWorkerUrl = url;
+            return fakeWorker;
+        };
+
+        const defaultClient = createFlowRuntimeClient();
+        await defaultClient.loadCatalog();
+        assert.equal(createdWorkerUrl, 'src/flow-runtime-worker.js');
+    } finally {
+        if (typeof previousWorker === 'undefined') {
+            delete globalThis.Worker;
+        } else {
+            globalThis.Worker = previousWorker;
+        }
+    }
+
     const errorWorker = {
         onmessage: null,
         onerror: null,

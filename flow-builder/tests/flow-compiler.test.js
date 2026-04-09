@@ -1,6 +1,23 @@
 const assert = require('node:assert/strict');
 
-const { compileGraph, crc16, PP_MAGIC, PP_VERSION } = require('../src/flow-compiler.js');
+const { compileGraph, crc16, PP_MAGIC, PP_VERSION, BLOCK_IDS } = require('../src/flow-compiler.js');
+
+assert.equal(BLOCK_IDS['source.lis3dh'], 0x01);
+assert.equal(BLOCK_IDS['source.mpu6050'], 0x02);
+assert.equal(BLOCK_IDS['source.polar'], 0x03);
+assert.equal(BLOCK_IDS['representation.select_axis'], 0x04);
+assert.equal(BLOCK_IDS['representation.vector_magnitude'], 0x05);
+assert.equal(BLOCK_IDS['pretraitement.hpf_gravity'], 0x06);
+assert.equal(BLOCK_IDS['pretraitement.lowpass'], 0x07);
+assert.equal(BLOCK_IDS['estimation.autocorrelation'], 0x08);
+assert.equal(BLOCK_IDS['estimation.fft_dominant'], 0x09);
+assert.equal(BLOCK_IDS['detection.adaptive_peak_detect'], 0x0A);
+assert.equal(BLOCK_IDS['detection.zero_crossing_detect'], 0x0B);
+assert.equal(BLOCK_IDS['validation.spm_range_gate'], 0x0C);
+assert.equal(BLOCK_IDS['validation.peak_selector'], 0x0D);
+assert.equal(BLOCK_IDS['validation.confidence_gate'], 0x0E);
+assert.equal(BLOCK_IDS['suivi.kalman_2d'], 0x0F);
+assert.equal(BLOCK_IDS['suivi.confirmation_filter'], 0x10);
 
 function test_minimal_pipeline() {
     const graph = {
