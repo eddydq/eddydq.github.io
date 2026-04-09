@@ -1,9 +1,15 @@
 const assert = require('node:assert/strict');
 
-const { createBuilderViewModel } = require('../flow-builder-viewmodel.js');
+const { createBuilderViewModel } = require('../flow-builder/src/flow-builder-viewmodel.js');
 
 const catalog = {
     blocks: [
+        {
+            block_id: 'source.polar',
+            group: 'source',
+            inputs: [],
+            outputs: [{ name: 'primary', kind: 'raw_window' }]
+        },
         {
             block_id: 'representation.select_axis',
             group: 'representation',
@@ -65,7 +71,7 @@ const model = createBuilderViewModel({
     selection: { activeSourcePort: 'n1.primary' }
 });
 
-assert.deepStrictEqual(model.paletteGroups.map(group => group.group), ['representation', 'estimation', 'validation']);
+assert.deepStrictEqual(model.paletteGroups.map(group => group.group), ['source', 'representation', 'estimation', 'validation']);
 assert.equal(model.nodeCards[0].outputPorts[0].slots[0].colorClass, 'port-kind-series');
 assert.equal(model.nodeCards[1].inputPorts[0].slots[0].acceptsActiveConnection, true);
 assert.deepStrictEqual(model.nodeCards[2].position, { x: 700, y: 200 });

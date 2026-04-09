@@ -1,9 +1,10 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const path = require('node:path');
 
-const { loadCatalog, normalizeCatalog } = require('../flow-catalog.js');
+const { loadCatalog, normalizeCatalog } = require('../flow-builder/src/flow-catalog.js');
 
-const catalog = JSON.parse(fs.readFileSync('assets/flow-block-catalog.json', 'utf8'));
+const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'flow-builder', 'assets', 'flow-block-catalog.json'), 'utf8'));
 const normalized = normalizeCatalog(catalog);
 
 assert.ok(normalized.byId['representation.select_axis']);

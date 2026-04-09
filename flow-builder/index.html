@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Tester - Paddling Pulse</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="flow.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="site-header flow-site-header">
+        <a class="brand" href="../index.html" aria-label="Paddling Pulse home">
+            <img src="../assets/logo.svg" alt="Paddling Pulse logo">
+            <span data-i18n="flow-title">Algorithm Tester</span>
+        </a>
+
+        <nav class="site-nav" aria-label="Primary">
+            <a href="../index.html" data-i18n="nav-back">← Back to Site</a>
+            <div class="lang-toggle">
+                <button class="lang-btn active" data-lang="en">EN</button>
+                <button class="lang-btn" data-lang="fr">FR</button>
+            </div>
+        </nav>
+    </header>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2 data-i18n="sidebar-title">DSP Pipeline</h2>
+                <p id="catalog-status" class="status-pill" data-i18n="flow-status-loading">Loading catalog...</p>
+            </div>
+            <div id="palette-groups" class="palette-groups"></div>
+            <div class="tester-controls">
+                <button id="run-sim-btn" class="button button-primary" data-i18n="btn-run-sim">Run Simulation</button>
+                <button id="upload-pipeline-btn" class="button" type="button">Upload to DA14531</button>
+                <progress id="upload-progress" value="0" max="1"></progress>
+                <p id="upload-status" class="status-pill">Upload idle</p>
+            </div>
+            <div class="graph-panel">
+                <h3 data-i18n="graph-title">Execution Outputs</h3>
+                <pre id="graph-output-list" class="graph-output-list"></pre>
+                <pre id="runtime-diagnostics" class="graph-output-list"></pre>
+            </div>
+        </aside>
+        <main class="canvas-container" id="canvas">
+            <svg id="wires-layer" class="wires-layer"></svg>
+            <div id="blocks-layer" class="blocks-layer"></div>
+        </main>
+    </div>
+    <script src="../script.js"></script>
+    <script src="src/flow-graph.js"></script>
+    <script src="src/flow-catalog.js"></script>
+    <script src="src/flow-runtime-client.js"></script>
+    <script src="src/flow-compiler.js"></script>
+    <script src="src/flow-ble-upload.js"></script>
+    <script src="src/flow-builder-viewmodel.js"></script>
+    <script src="src/flow.js"></script>
+</body>
+</html>

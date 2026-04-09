@@ -122,4 +122,31 @@ if ($flowHtml -notmatch 'id="runtime-diagnostics"') {
     throw 'flow-builder/index.html is missing runtime-diagnostics'
 }
 
+$forbiddenLegacyFlowBuilderPaths = @(
+    "analysis",
+    "flow.html",
+    "flow.css",
+    "flow.js",
+    "flow-graph.js",
+    "flow-catalog.js",
+    "flow-compiler.js",
+    "flow-runtime-client.js",
+    "flow-runtime-worker.js",
+    "flow-builder-viewmodel.js",
+    "flow-ble-upload.js",
+    "flow-compiler.test.js",
+    "flow-ble-upload.test.js",
+    "assets/flow-runtime.js",
+    "assets/flow-runtime.wasm",
+    "assets/flow-block-catalog.json",
+    "assets/flow-block-catalog.js"
+)
+
+foreach ($path in $forbiddenLegacyFlowBuilderPaths) {
+    $fullPath = Join-Path $root $path
+    if (Test-Path -LiteralPath $fullPath) {
+        throw "Unexpected legacy flow-builder path remains: $path"
+    }
+}
+
 Write-Host "Static site smoke test passed."
