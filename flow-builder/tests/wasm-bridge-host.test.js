@@ -82,6 +82,61 @@ delete missingSchemaGraph.schema_version;
 
 const unsupportedSchemaGraph = { ...peakGraph, schema_version: 999 };
 
+const numericPortWrapGraph = {
+    schema_version: 2,
+    nodes: [
+        {
+            node_id: 'select',
+            block_id: 'representation.select_axis',
+            params: { axis: 'y' }
+        },
+        {
+            node_id: 'lowpass',
+            block_id: 'pretraitement.lowpass',
+            params: { cutoff_hz: 1, order: 1 }
+        }
+    ],
+    connections: [
+        { source: 'input.raw', source_socket: 0, target: 'select.source', target_socket: 0 }
+    ],
+    edges: [
+        { src: 0, srcPort: 256, dst: 1, dstPort: 0 }
+    ],
+    outputs: { final: 'lowpass.primary' }
+};
+
+const rawInputs = [
+    {
+        binding_name: 'raw',
+        packet: {
+            kind: 'raw_window',
+            data: {
+                sample_rate_hz: 52,
+                length: 4,
+                x: [0, 0, 0, 0],
+                y: [1, 2, 3, 4],
+                z: [0, 0, 0, 0]
+            }
+        }
+    }
+];
+
+const overlongNodeId = 'node_id_that_is_longer_than_the_bridge_buffer_limit';
+const overlongNodeIdGraph = {
+    schema_version: 2,
+    nodes: [
+        {
+            node_id: overlongNodeId,
+            block_id: 'representation.select_axis',
+            params: { axis: 'y' }
+        }
+    ],
+    connections: [
+        { source: 'input.raw', source_socket: 0, target: `${overlongNodeId}.source`, target_socket: 0 }
+    ],
+    outputs: { final: `${overlongNodeId}.primary` }
+};
+
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-wasm-bridge-host-'));
 const harnessPath = path.join(tempDir, 'wasm_bridge_host_test.c');
 const exePath = path.join(tempDir, process.platform === 'win32' ? 'wasm_bridge_host_test.exe' : 'wasm_bridge_host_test');
@@ -153,6 +208,20 @@ int main(void)
             ${JSON.stringify(JSON.stringify(unsupportedSchemaGraph))},
             ${JSON.stringify(JSON.stringify(peakInputs))},
             "unsupported schema_version")) {
+        return 1;
+    }
+    if (run_rejected_case(
+            "numeric_src_port_out_of_range",
+            ${JSON.stringify(JSON.stringify(numericPortWrapGraph))},
+            ${JSON.stringify(JSON.stringify(rawInputs))},
+            "numeric edge source port")) {
+        return 1;
+    }
+    if (run_rejected_case(
+            "overlong_node_id",
+            ${JSON.stringify(JSON.stringify(overlongNodeIdGraph))},
+            ${JSON.stringify(JSON.stringify(rawInputs))},
+            "string exceeds buffer")) {
         return 1;
     }
     return 0;

@@ -349,9 +349,11 @@ static int read_json_string(const char *p, const char *end, char *out, size_t ou
             return 1;
         }
 
-        if (used + 1U < out_size) {
-            out[used++] = c;
+        if (used + 1U >= out_size) {
+            set_error("string exceeds buffer");
+            return 0;
         }
+        out[used++] = c;
     }
     return 0;
 }
@@ -465,30 +467,39 @@ static int get_string_value(const char *object_begin, const char *object_end, co
     return read_json_string(value, object_end, out, out_size, NULL);
 }
 
-static int get_int_value(const char *object_begin, const char *object_end, const char *key, int fallback)
+static int get_int_value_present(const char *object_begin, const char *object_end, const char *key, int *out)
 {
     const char *value;
     char *parse_end;
     long parsed;
 
     if (!find_key_value(object_begin, object_end, key, &value)) {
-        return fallback;
+        return 0;
     }
     parsed = strtol(value, &parse_end, 10);
     if (parse_end == value) {
-        return fallback;
+        return -1;
     }
-    return (int)parsed;
+    *out = (int)parsed;
+    return 1;
+}
+
+static int get_int_value(const char *object_begin, const char *object_end, const char *key, int fallback)
+{
+    int parsed;
+
+    return get_int_value_present(object_begin, object_end, key, &parsed) == 1 ? parsed : fallback;
 }
 
 static int get_int_any(const char *object_begin, const char *object_end, const char *key_a, const char *key_b, int fallback)
 {
-    int value = get_int_value(object_begin, object_end, key_a, fallback);
+    int value;
+    int found = get_int_value_present(object_begin, object_end, key_a, &value);
 
-    if (value == fallback && key_b) {
-        value = get_int_value(object_begin, object_end, key_b, fallback);
+    if (found != 0) {
+        return found == 1 ? value : fallback;
     }
-    return value;
+    return key_b ? get_int_value(object_begin, object_end, key_b, fallback) : fallback;
 }
 
 static int validate_schema_version(const char *graph_json, const char *graph_end)
@@ -734,6 +745,7 @@ static int parse_nodes(const char *graph_json, const char *graph_end, pp_graph_t
         const char *node_end;
         const char *params_begin = NULL;
         const char *params_end = NULL;
+        const char *node_id_value;
         char block_id[96];
         char node_id[32];
         const pp_wasm_block_meta_t *meta;
@@ -771,7 +783,11 @@ static int parse_nodes(const char *graph_json, const char *graph_end, pp_graph_t
             set_error("unknown block id");
             return 0;
         }
-        if (!get_string_value(node_begin, node_end, "node_id", node_id, sizeof(node_id))) {
+        if (find_key_value(node_begin, node_end, "node_id", &node_id_value)) {
+            if (!read_json_string(node_id_value, node_end, node_id, sizeof(node_id), NULL)) {
+                return 0;
+            }
+        } else {
             numeric_id = get_int_value(node_begin, node_end, "id", (int)node_count);
             snprintf(node_id, sizeof(node_id), "%d", numeric_id);
         }
@@ -934,6 +950,8 @@ static int parse_numeric_edges(const char *array_begin, const char *array_end, p
         int dst;
         int src_port;
         int dst_port;
+        const pp_block_manifest_t *src_manifest;
+        const pp_block_manifest_t *dst_manifest;
 
         p = skip_ws(p);
         if (!p || p >= array_end || *p == ']') {
@@ -959,6 +977,20 @@ static int parse_numeric_edges(const char *array_begin, const char *array_end, p
         dst_port = get_int_any(edge_begin, edge_end, "dstPort", "dst_port", 0);
         if (src < 0 || dst < 0 || src >= graph->node_count || dst >= graph->node_count) {
             set_error("numeric edge references an unknown node");
+            return 0;
+        }
+        src_manifest = pp_block_get_manifest(graph->nodes[src].block_id);
+        dst_manifest = pp_block_get_manifest(graph->nodes[dst].block_id);
+        if (!src_manifest || !dst_manifest) {
+            set_error("numeric edge references a block without a manifest");
+            return 0;
+        }
+        if (src_port < 0 || src_port >= src_manifest->num_outputs) {
+            set_error("numeric edge source port is out of range");
+            return 0;
+        }
+        if (dst_port < 0 || dst_port >= dst_manifest->num_inputs) {
+            set_error("numeric edge destination port is out of range");
             return 0;
         }
         if (!add_graph_edge(graph, (uint8_t)src, (uint8_t)src_port, (uint8_t)dst, (uint8_t)dst_port)) {
