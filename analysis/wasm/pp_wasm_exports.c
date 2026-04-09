@@ -702,6 +702,8 @@ static int parse_estimate_packet(const char **cursor, pp_packet_t *packet) {
 
 static int parse_packet_object(const char **cursor, pp_packet_t *packet) {
     const char *kind = NULL;
+    int wrapped = 0;
+    int ok = 0;
 
     if (!consume_char(cursor, '{') || !consume_literal(cursor, "\"kind\":")) {
         return 0;
@@ -716,20 +718,32 @@ static int parse_packet_object(const char **cursor, pp_packet_t *packet) {
         return 0;
     }
 
-    if (strcmp(kind, "raw_window") == 0) {
-        return parse_raw_window_packet(cursor, packet);
-    }
-    if (strcmp(kind, "series") == 0) {
-        return parse_series_packet(cursor, packet);
-    }
-    if (strcmp(kind, "candidate") == 0) {
-        return parse_candidate_packet(cursor, packet);
-    }
-    if (strcmp(kind, "estimate") == 0) {
-        return parse_estimate_packet(cursor, packet);
+    if (consume_literal(cursor, "\"data\":")) {
+        if (!consume_char(cursor, '{')) {
+            return 0;
+        }
+        wrapped = 1;
     }
 
-    return 0;
+    if (strcmp(kind, "raw_window") == 0) {
+        ok = parse_raw_window_packet(cursor, packet);
+    } else if (strcmp(kind, "series") == 0) {
+        ok = parse_series_packet(cursor, packet);
+    } else if (strcmp(kind, "candidate") == 0) {
+        ok = parse_candidate_packet(cursor, packet);
+    } else if (strcmp(kind, "estimate") == 0) {
+        ok = parse_estimate_packet(cursor, packet);
+    }
+
+    if (!ok) {
+        return 0;
+    }
+
+    if (wrapped) {
+        return consume_char(cursor, '}');
+    }
+
+    return 1;
 }
 
 static int pp_parse_graph_json(

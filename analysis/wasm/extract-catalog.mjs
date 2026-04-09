@@ -5,7 +5,12 @@ import runtimeModuleFactory from './runtime-catalog-node.mjs';
 const runtime = await runtimeModuleFactory();
 const pointer = runtime._pp_wasm_catalog_json();
 const json = runtime.UTF8ToString(pointer);
+const parsed = JSON.parse(json);
 const outPath = path.resolve('assets/flow-block-catalog.json');
 
-fs.writeFileSync(outPath, `${json}\n`, 'utf8');
+if (!parsed || parsed.error || !Array.isArray(parsed.blocks)) {
+    throw new Error(`catalog export failed: ${parsed && parsed.error ? parsed.error : 'missing blocks array'}`);
+}
+
+fs.writeFileSync(outPath, `${JSON.stringify(parsed, null, 2)}\n`, 'utf8');
 console.log(`wrote ${outPath}`);

@@ -34,6 +34,28 @@ async function main() {
     assert.deepStrictEqual(result.outputs, { final: [] });
     assert.equal(messages[0].type, 'catalog');
     assert.equal(messages[1].type, 'run');
+
+    const errorWorker = {
+        onmessage: null,
+        onerror: null,
+        onmessageerror: null,
+        postMessage() {
+            setTimeout(() => {
+                this.onerror({ message: 'worker boot failed' });
+            }, 0);
+        }
+    };
+    const errorClient = createFlowRuntimeClient({ workerFactory: () => errorWorker });
+
+    await assert.rejects(
+        Promise.race([
+            errorClient.loadCatalog(),
+            new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('timeout')), 50);
+            })
+        ]),
+        /worker boot failed/
+    );
 }
 
 main().catch(error => {

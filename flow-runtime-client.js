@@ -14,6 +14,14 @@
         let requestId = 0;
         const pending = new Map();
 
+        function rejectAll(error) {
+            for (const handlers of pending.values()) {
+                handlers.reject(error);
+            }
+
+            pending.clear();
+        }
+
         worker.onmessage = (event) => {
             const data = event && event.data ? event.data : {};
             const id = data.requestId;
@@ -33,12 +41,30 @@
             handlers.reject(new Error(data.error || 'runtime worker error'));
         };
 
+        worker.onerror = (event) => {
+            const message = event && event.message
+                ? event.message
+                : 'runtime worker startup failed';
+
+            rejectAll(new Error(message));
+        };
+
+        worker.onmessageerror = () => {
+            rejectAll(new Error('runtime worker message transport failed'));
+        };
+
         function call(type, payload) {
             const id = ++requestId;
 
             return new Promise((resolve, reject) => {
                 pending.set(id, { resolve, reject });
-                worker.postMessage({ requestId: id, type, payload });
+
+                try {
+                    worker.postMessage({ requestId: id, type, payload });
+                } catch (error) {
+                    pending.delete(id);
+                    reject(error);
+                }
             });
         }
 
