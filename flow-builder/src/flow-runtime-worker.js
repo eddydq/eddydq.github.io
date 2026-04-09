@@ -10,7 +10,7 @@ function allocUtf8(module, value) {
 
 async function ensureRuntime() {
     if (!runtimeModulePromise) {
-        importScripts('assets/flow-runtime.js');
+        importScripts('../assets/flow-runtime.js');
 
         if (typeof self.createFlowRuntimeModule !== 'function') {
             throw new Error('createFlowRuntimeModule is not available');

@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 
-const { createPipelineFrames, PP_CHUNK_FLAG_FIRST, PP_CHUNK_FLAG_LAST } = require('./flow-ble-upload.js');
+const { createPipelineFrames, PP_CHUNK_FLAG_FIRST, PP_CHUNK_FLAG_LAST } = require('../src/flow-ble-upload.js');
 
 function test_create_pipeline_frames() {
     const payload = new Uint8Array([1, 2, 3, 4, 5]);

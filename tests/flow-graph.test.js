@@ -7,7 +7,7 @@ const {
     serializeGraph,
     validateGraph,
     topologicallySortGraph
-} = require('../flow-graph.js');
+} = require('../flow-builder/src/flow-graph.js');
 
 const catalog = {
     'representation.select_axis': {

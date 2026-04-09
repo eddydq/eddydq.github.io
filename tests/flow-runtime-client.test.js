@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 
-const { createFlowRuntimeClient } = require('../flow-runtime-client.js');
+const { createFlowRuntimeClient } = require('../flow-builder/src/flow-runtime-client.js');
 
 const messages = [];
 const fakeWorker = {

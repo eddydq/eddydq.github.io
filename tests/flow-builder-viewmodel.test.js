@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 
-const { createBuilderViewModel } = require('../flow-builder-viewmodel.js');
+const { createBuilderViewModel } = require('../flow-builder/src/flow-builder-viewmodel.js');
 
 const catalog = {
     blocks: [

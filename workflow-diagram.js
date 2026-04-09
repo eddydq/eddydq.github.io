@@ -328,7 +328,7 @@
         if (hasClassToken(className, 'nodeDspFlow')) {
             return {
                 type: 'navigate',
-                href: 'flow.html'
+                href: 'flow-builder/index.html'
             };
         }
         return null;

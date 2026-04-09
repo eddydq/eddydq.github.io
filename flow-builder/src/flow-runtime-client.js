@@ -52,7 +52,7 @@
 
             worker = options.workerFactory
                 ? options.workerFactory()
-                : new Worker(options.workerUrl || 'flow-runtime-worker.js');
+                : new Worker(options.workerUrl || 'src/flow-runtime-worker.js');
 
             attachWorkerHandlers(worker);
             return worker;

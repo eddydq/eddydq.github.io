@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 
-const { compileGraph, crc16, PP_MAGIC, PP_VERSION } = require('./flow-compiler.js');
+const { compileGraph, crc16, PP_MAGIC, PP_VERSION } = require('../src/flow-compiler.js');
 
 function test_minimal_pipeline() {
     const graph = {

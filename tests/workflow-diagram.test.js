@@ -108,7 +108,7 @@ assert.deepStrictEqual(
 );
 assert.deepStrictEqual(
     getFlowchartActionFromClassName('node default nodeDspFlow'),
-    { type: 'navigate', href: 'flow.html' }
+    { type: 'navigate', href: 'flow-builder/index.html' }
 );
 
 const overviewDefinition = buildMainFlowchartDefinition();
