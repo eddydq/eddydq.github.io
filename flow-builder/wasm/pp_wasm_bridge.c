@@ -19,6 +19,7 @@
 #define PP_WASM_MAX_STATE_BYTES 64U
 #define PP_WASM_NODE_STORAGE_CAP PP_GRAPH_PACKET_CAPACITY
 #define PP_WASM_RAW_STORAGE_CAP (PP_GRAPH_PACKET_CAPACITY * 3U)
+#define PP_WASM_GRAPH_SCHEMA_VERSION 2
 
 const char *pp_wasm_catalog_json(void);
 int pp_wasm_run_graph_json(const char *graph_json, const char *inputs_json);
@@ -488,6 +489,30 @@ static int get_int_any(const char *object_begin, const char *object_end, const c
         value = get_int_value(object_begin, object_end, key_b, fallback);
     }
     return value;
+}
+
+static int validate_schema_version(const char *graph_json, const char *graph_end)
+{
+    const char *value;
+    char *parse_end;
+    long schema_version;
+
+    if (!find_key_value(graph_json, graph_end, "schema_version", &value)) {
+        set_error("missing schema_version");
+        return 0;
+    }
+
+    schema_version = strtol(value, &parse_end, 10);
+    if (parse_end == value) {
+        set_error("schema_version must be numeric");
+        return 0;
+    }
+    if (schema_version != PP_WASM_GRAPH_SCHEMA_VERSION) {
+        set_error("unsupported schema_version");
+        return 0;
+    }
+
+    return 1;
 }
 
 static uint8_t clamp_u8(int value)
@@ -1415,7 +1440,8 @@ int pp_wasm_run_graph_json(const char *graph_json, const char *inputs_json)
     }
 
     graph_end = graph_json + strlen(graph_json);
-    if (!parse_nodes(graph_json, graph_end, &graph, nodes) ||
+    if (!validate_schema_version(graph_json, graph_end) ||
+        !parse_nodes(graph_json, graph_end, &graph, nodes) ||
         !parse_edges(graph_json, graph_end, &graph, nodes, sys_edges, &sys_edge_count) ||
         !parse_inputs(inputs_json, inputs, &input_count) ||
         !parse_output_bindings(graph_json, graph_end, bindings, &binding_count) ||

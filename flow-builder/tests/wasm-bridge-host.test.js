@@ -77,6 +77,11 @@ const confidenceInputs = [
     }
 ];
 
+const missingSchemaGraph = { ...peakGraph };
+delete missingSchemaGraph.schema_version;
+
+const unsupportedSchemaGraph = { ...peakGraph, schema_version: 999 };
+
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-wasm-bridge-host-'));
 const harnessPath = path.join(tempDir, 'wasm_bridge_host_test.c');
 const exePath = path.join(tempDir, process.platform === 'win32' ? 'wasm_bridge_host_test.exe' : 'wasm_bridge_host_test');
@@ -104,6 +109,22 @@ static int run_case(const char *name, const char *graph_json, const char *inputs
     return 0;
 }
 
+static int run_rejected_case(const char *name, const char *graph_json, const char *inputs_json, const char *expected_error)
+{
+    int status = pp_wasm_run_graph_json(graph_json, inputs_json);
+    const char *result = pp_wasm_last_result_json();
+
+    if (status == 0) {
+        fprintf(stderr, "%s unexpectedly succeeded: %s\\n", name, result);
+        return 1;
+    }
+    if (!strstr(result, expected_error)) {
+        fprintf(stderr, "%s error did not contain expected substring.\\nExpected: %s\\nActual: %s\\n", name, expected_error, result);
+        return 1;
+    }
+    return 0;
+}
+
 int main(void)
 {
     if (run_case(
@@ -118,6 +139,20 @@ int main(void)
             ${JSON.stringify(JSON.stringify(confidenceGraph))},
             ${JSON.stringify(JSON.stringify(confidenceInputs))},
             "\\\"final\\\":{\\\"kind\\\":\\\"candidate\\\",\\\"axis\\\":255,\\\"sample_rate_hz\\\":52,\\\"length\\\":2,\\\"values\\\":[123,10]")) {
+        return 1;
+    }
+    if (run_rejected_case(
+            "missing_schema_version",
+            ${JSON.stringify(JSON.stringify(missingSchemaGraph))},
+            ${JSON.stringify(JSON.stringify(peakInputs))},
+            "schema_version")) {
+        return 1;
+    }
+    if (run_rejected_case(
+            "unsupported_schema_version",
+            ${JSON.stringify(JSON.stringify(unsupportedSchemaGraph))},
+            ${JSON.stringify(JSON.stringify(peakInputs))},
+            "unsupported schema_version")) {
         return 1;
     }
     return 0;
