@@ -20,7 +20,11 @@ foreach ($path in $requiredFiles) {
 $html = Get-Content (Join-Path $root "index.html") -Raw
 $css = Get-Content (Join-Path $root "styles.css") -Raw
 $js = Get-Content (Join-Path $root "script.js") -Raw
-$flowHtml = Get-Content (Join-Path $root "flow.html") -Raw
+$flowHtmlPath = Join-Path $root "flow-builder/index.html"
+if (-not (Test-Path -LiteralPath $flowHtmlPath)) {
+    throw "Missing required file: flow-builder/index.html"
+}
+$flowHtml = Get-Content $flowHtmlPath -Raw
 
 if ($html -notmatch "Paddling Pulse") {
     throw "Expected the site title to mention Paddling Pulse."
@@ -107,15 +111,15 @@ if ($js -notmatch 'data-flow-toggle-step' -or $js -notmatch 'simple-flow-track')
 }
 
 if ($flowHtml -notmatch 'id="palette-groups"') {
-    throw 'flow.html is missing palette-groups'
+    throw 'flow-builder/index.html is missing palette-groups'
 }
 
 if ($flowHtml -notmatch 'id="graph-output-list"') {
-    throw 'flow.html is missing graph-output-list'
+    throw 'flow-builder/index.html is missing graph-output-list'
 }
 
 if ($flowHtml -notmatch 'id="runtime-diagnostics"') {
-    throw 'flow.html is missing runtime-diagnostics'
+    throw 'flow-builder/index.html is missing runtime-diagnostics'
 }
 
 Write-Host "Static site smoke test passed."

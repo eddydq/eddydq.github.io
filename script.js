@@ -98,7 +98,39 @@ const translations = {
         "flow-step-filter": "Filter signal",
         "flow-step-detect": "Detect period",
         "flow-step-smooth": "Smooth cadence",
+        
+        
+        "flow-step-loop": "Return to Advertise",
         "flow-step-notify": "BLE notify",
+        
+        "flow-step-ble-adv": "BLE advertise",
+        "flow-step-client-conn": "Client connects",
+        "flow-step-csc-en": "CSC notifications enabled",
+        "flow-step-sensor-in": "Sensor input",
+        "flow-step-stroke-est": "Stroke estimate",
+        "flow-step-ble-out": "BLE cadence out",
+
+        "lane-imu": "Sensor / IMU",
+        "flow-step-imu-src": "IMU source",
+        "flow-step-imu-init": "Driver init",
+        "flow-step-imu-start": "Start acquisition",
+        "flow-step-imu-proc": "Periodic process",
+        "flow-step-imu-push": "Push samples",
+
+        "lane-dsp": "DSP / Stroke Rate",
+        "flow-step-dsp-store": "Sample window",
+        "flow-step-dsp-auto": "Autocorrelation",
+        "flow-step-dsp-guard": "Confidence guard",
+        "flow-step-dsp-kalman": "Kalman smoothing",
+        "flow-step-dsp-rpm": "Cadence RPM",
+
+        "lane-ble": "BLE / CSCP",
+        "flow-step-ble-start": "pipeline_start()",
+        "flow-step-ble-timer": "CSCP timer",
+        "flow-step-ble-notify": "Cadence notify",
+
+        "flow-back": "Back to overview",
+
         "placeholder-overall-flow": "Overall Flowchart Placeholder",
         "placeholder-imu-flow": "IMU Connection Flowcharts Placeholder (MPU6050, LIS3DH, Polar)",
         "placeholder-cscp-flow": "CSCP Initialization Flowchart Placeholder",
@@ -207,7 +239,39 @@ const translations = {
         "flow-step-filter": "Filtrer le signal",
         "flow-step-detect": "Détecter la période",
         "flow-step-smooth": "Lisser la cadence",
+        
+        
+        "flow-step-loop": "Retour à la publicité",
         "flow-step-notify": "Notification BLE",
+        
+        "flow-step-ble-adv": "Publicité BLE",
+        "flow-step-client-conn": "Connexion client",
+        "flow-step-csc-en": "Notifications CSC",
+        "flow-step-sensor-in": "Entrée capteur",
+        "flow-step-stroke-est": "Estimation cadence",
+        "flow-step-ble-out": "Sortie cadence BLE",
+
+        "lane-imu": "Capteur / IMU",
+        "flow-step-imu-src": "Source IMU",
+        "flow-step-imu-init": "Init. pilote",
+        "flow-step-imu-start": "Acquisition",
+        "flow-step-imu-proc": "Processus périodique",
+        "flow-step-imu-push": "Pousser données",
+
+        "lane-dsp": "DSP / Cadence",
+        "flow-step-dsp-store": "Fenêtre d'échantillons",
+        "flow-step-dsp-auto": "Autocorrélation",
+        "flow-step-dsp-guard": "Garde confiance",
+        "flow-step-dsp-kalman": "Lissage Kalman",
+        "flow-step-dsp-rpm": "Sortie RPM",
+
+        "lane-ble": "BLE / CSCP",
+        "flow-step-ble-start": "pipeline_start()",
+        "flow-step-ble-timer": "Timer CSCP",
+        "flow-step-ble-notify": "Notification cadence",
+
+        "flow-back": "Retour à la vue d'ensemble",
+
         "placeholder-overall-flow": "Espace Réservé : Diagramme de Flux Global",
         "placeholder-imu-flow": "Espace Réservé : Diagrammes de Connexion IMU (MPU6050, LIS3DH, Polar)",
         "placeholder-cscp-flow": "Espace Réservé : Diagramme d'Initialisation CSCP",
@@ -303,52 +367,86 @@ const simpleFlowchartApi = window.SimpleFlowchart || {};
 const createSimpleFlowState = simpleFlowchartApi.createSimpleFlowState;
 const transitionSimpleFlowState = simpleFlowchartApi.transitionSimpleFlowState;
 const buildSimpleFlowModel = simpleFlowchartApi.buildSimpleFlowModel;
+
 let simpleFlowchartState = typeof createSimpleFlowState === "function"
     ? createSimpleFlowState()
-    : { expanded: false };
+    : { mode: 'inline', expandedLanes: [] };
 
 function getSimpleFlowTranslation(key) {
     return translations[currentLanguage]?.[key] || translations.en?.[key] || key;
 }
 
-function buildSimpleFlowTrackMarkup(steps) {
-    return steps.map((step, index) => {
+
+function buildSimpleFlowTrackMarkup(model) {
+    const itemsPerRow = window.innerWidth < 640 ? 2 : (window.innerWidth < 900 ? 3 : 4);
+    
+    let html = '<div class="simple-flow-grid" style="display: grid; grid-template-columns: repeat(' + (itemsPerRow * 2 - 1) + ', auto); justify-content: center; align-items: center; gap: 0.5rem; row-gap: 1.5rem; width: 100%; padding: 1rem 0;">';
+    
+    model.steps.forEach((step, index) => {
+        const rowIdx = Math.floor(index / itemsPerRow);
+        const indexInRow = index % itemsPerRow;
+        const isEvenRow = rowIdx % 2 === 0;
+        
+        const cssRow = rowIdx * 2 + 1;
+        const colIdx = isEvenRow ? indexInRow : (itemsPerRow - 1 - indexInRow);
+        const cssCol = colIdx * 2 + 1;
+        
         const stepClasses = [
             "simple-flow-step",
             `simple-flow-step-${step.tone}`,
-            step.revealOnExpand ? "is-detail-reveal" : "",
-            step.isExpandable ? "is-expandable" : ""
+            step.isInteractive ? "is-expandable" : "",
+            step.isSubStep ? "is-substep" : "",
+            step.isExpanded ? "is-expanded-node" : "",
+            step.isReturn ? "return-step" : ""
         ].filter(Boolean).join(" ");
-        const tagName = step.isExpandable ? "button" : "div";
-        const stepAttributes = step.isExpandable
-            ? 'type="button" data-flow-toggle-step="pipeline"'
+        
+        const isLink = step.id === 'dsp-rpm';
+        const tagName = isLink ? "a" : (step.isInteractive ? "button" : "div");
+        let stepAttributes = step.isInteractive ? `type="button" data-flow-toggle-step="${step.laneId}"` : "";
+        if (isLink) {
+            stepAttributes += ' href="flow.html" style="text-decoration: none;"';
+        }
+        
+        const chipMarkup = step.isInteractive
+            ? `<span class="simple-flow-step-chip" aria-hidden="true">${step.isExpanded ? '-' : '+'}</span>`
             : "";
-        const chipMarkup = step.isExpandable
-            ? '<span class="simple-flow-step-chip" data-flow-toggle-chip aria-hidden="true"></span>'
-            : "";
-        const arrowClasses = [
-            "simple-flow-arrow",
-            step.revealOnExpand ? "is-detail-reveal" : ""
-        ].filter(Boolean).join(" ");
-
-        return `
-            <${tagName} class="${stepClasses}" data-step-id="${step.id}" ${stepAttributes}>
-                <span class="simple-flow-step-index" data-step-index="${step.id}">${index + 1}</span>
+            
+        html += `
+            <${tagName} class="${stepClasses}" data-step-id="${step.id}" ${stepAttributes} style="grid-row: ${cssRow}; grid-column: ${cssCol}; margin: 0 auto; position: relative;">
+                ${step.isSubStep || step.isReturn ? '' : `<span class="simple-flow-step-index" data-step-index="${step.id}">${index + 1}</span>`}
                 <span class="simple-flow-step-label" data-step-label="${step.id}">${getSimpleFlowTranslation(step.labelKey)}</span>
                 ${chipMarkup}
             </${tagName}>
-            ${index < steps.length - 1 ? `<span class="${arrowClasses}" data-arrow-after="${step.id}" aria-hidden="true"></span>` : ""}
         `;
-    }).join("");
+        
+        if (index < model.steps.length - 1) {
+            const isLastInRow = indexInRow === itemsPerRow - 1;
+            let arrowCssRow, arrowCssCol, arrowClass;
+            
+            if (isLastInRow) {
+                arrowCssRow = rowIdx * 2 + 2;
+                arrowCssCol = isEvenRow ? (itemsPerRow - 1) * 2 + 1 : 1;
+                arrowClass = "arrow-down";
+            } else {
+                arrowCssRow = rowIdx * 2 + 1;
+                arrowCssCol = isEvenRow ? (colIdx * 2 + 2) : (colIdx * 2);
+                arrowClass = isEvenRow ? "arrow-right" : "arrow-left";
+            }
+            
+            html += `<span class="simple-flow-arrow ${arrowClass}" data-arrow-after="${step.id}" aria-hidden="true" style="grid-row: ${arrowCssRow}; grid-column: ${arrowCssCol};"></span>`;
+        }
+    });
+    
+    html += '</div>';
+    return html;
 }
 
 function ensureSimpleFlowchartStructure(track) {
-    if (!track || track.childElementCount || typeof buildSimpleFlowModel !== "function") {
+    if (!track || typeof buildSimpleFlowModel !== "function") {
         return;
     }
-
     const model = buildSimpleFlowModel(simpleFlowchartState);
-    track.innerHTML = buildSimpleFlowTrackMarkup(model.steps);
+    track.innerHTML = buildSimpleFlowTrackMarkup(model);
 }
 
 function syncSimpleFlowchart() {
@@ -360,49 +458,14 @@ function syncSimpleFlowchart() {
     }
 
     ensureSimpleFlowchartStructure(track);
-
-    const model = buildSimpleFlowModel(simpleFlowchartState);
-    let visibleOrder = 0;
-    root.classList.toggle("is-expanded", model.expanded);
-    model.steps.forEach(step => {
-        const stepNode = track.querySelector(`[data-step-id="${step.id}"]`);
-        const indexNode = track.querySelector(`[data-step-index="${step.id}"]`);
-        const labelNode = track.querySelector(`[data-step-label="${step.id}"]`);
-        const arrowNode = track.querySelector(`[data-arrow-after="${step.id}"]`);
-
-        if (stepNode) {
-            stepNode.classList.toggle("is-hidden", !step.visible);
-            if (step.isExpandable) {
-                stepNode.setAttribute("aria-expanded", model.expanded ? "true" : "false");
-            }
-        }
-
-        if (indexNode && step.visible) {
-            visibleOrder += 1;
-            indexNode.textContent = String(visibleOrder);
-        }
-
-        if (labelNode) {
-            labelNode.textContent = getSimpleFlowTranslation(step.labelKey);
-        }
-
-        if (arrowNode) {
-            arrowNode.classList.toggle("is-hidden", Boolean(step.revealOnExpand && !model.expanded));
-        }
-    });
-
-    const toggleChip = track.querySelector("[data-flow-toggle-chip]");
-    if (toggleChip) {
-        toggleChip.textContent = model.expanded ? "-" : "+4";
-    }
 }
 
-function toggleSimpleFlowchart(stepId = "pipeline") {
+function toggleSimpleFlowchart(stepId) {
     if (typeof transitionSimpleFlowState !== "function") {
         return;
     }
-
-    simpleFlowchartState = transitionSimpleFlowState(simpleFlowchartState, { type: "toggle-step", stepId });
+    
+    simpleFlowchartState = transitionSimpleFlowState(simpleFlowchartState, { type: "toggle_lane", laneId: stepId });
     syncSimpleFlowchart();
 }
 
@@ -410,10 +473,13 @@ document.addEventListener("DOMContentLoaded", () => {
     syncSimpleFlowchart();
     document.getElementById("simple-flow-track")?.addEventListener("click", event => {
         const toggleStep = event.target.closest("[data-flow-toggle-step]");
-        if (!toggleStep) {
-            return;
+        if (toggleStep) {
+            toggleSimpleFlowchart(toggleStep.getAttribute("data-flow-toggle-step"));
         }
-
-        toggleSimpleFlowchart(toggleStep.getAttribute("data-flow-toggle-step"));
     });
+});
+
+
+window.addEventListener('resize', () => {
+    syncSimpleFlowchart();
 });
