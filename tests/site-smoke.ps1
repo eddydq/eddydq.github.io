@@ -20,6 +20,7 @@ foreach ($path in $requiredFiles) {
 $html = Get-Content (Join-Path $root "index.html") -Raw
 $css = Get-Content (Join-Path $root "styles.css") -Raw
 $js = Get-Content (Join-Path $root "script.js") -Raw
+$flowHtml = Get-Content (Join-Path $root "flow.html") -Raw
 
 if ($html -notmatch "Paddling Pulse") {
     throw "Expected the site title to mention Paddling Pulse."
@@ -103,6 +104,18 @@ if ($js -match 'mermaid\.run' -or $js -match 'flowchartRenderToken' -or $js -mat
 
 if ($js -notmatch 'data-flow-toggle-step' -or $js -notmatch 'simple-flow-track') {
     throw "Expected script.js to bind step-based flowchart expansion instead of a separate button."
+}
+
+if ($flowHtml -notmatch 'id="palette-groups"') {
+    throw 'flow.html is missing palette-groups'
+}
+
+if ($flowHtml -notmatch 'id="graph-output-list"') {
+    throw 'flow.html is missing graph-output-list'
+}
+
+if ($flowHtml -notmatch 'id="runtime-diagnostics"') {
+    throw 'flow.html is missing runtime-diagnostics'
 }
 
 Write-Host "Static site smoke test passed."

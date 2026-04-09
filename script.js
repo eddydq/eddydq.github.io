@@ -143,7 +143,14 @@ const translations = {
         "block-kalman": "Kalman Filter",
         "block-output": "Cadence Output",
         "btn-run-sim": "Run Simulation",
-        "graph-title": "Calculated Stroke Rate"
+        "graph-title": "Execution Outputs",
+        "flow-status-loading": "Loading catalog...",
+        "flow-status-ready": "Catalog ready",
+        "flow-status-error": "Catalog failed to load",
+        "flow-run-invalid": "Fix graph validation errors before running.",
+        "flow-run-running": "Running native pipeline...",
+        "flow-run-complete": "Native pipeline complete",
+        "flow-run-error": "Native runtime failed"
     },
     fr: {
         "nav-specs": "Spécifications",
@@ -245,7 +252,14 @@ const translations = {
         "block-kalman": "Filtre de Kalman",
         "block-output": "Sortie de Cadence",
         "btn-run-sim": "Lancer la Simulation",
-        "graph-title": "Cadence Calculée"
+        "graph-title": "Sorties d'exécution",
+        "flow-status-loading": "Chargement du catalogue...",
+        "flow-status-ready": "Catalogue prêt",
+        "flow-status-error": "Échec du chargement du catalogue",
+        "flow-run-invalid": "Corrigez les erreurs de validation avant l'exécution.",
+        "flow-run-running": "Exécution du pipeline natif...",
+        "flow-run-complete": "Pipeline natif terminé",
+        "flow-run-error": "Échec du runtime natif"
     }
 };
 

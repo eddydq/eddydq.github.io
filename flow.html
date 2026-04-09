@@ -30,23 +30,16 @@
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h2 data-i18n="sidebar-title">DSP Pipeline</h2>
+                <p id="catalog-status" class="status-pill" data-i18n="flow-status-loading">Loading catalog...</p>
             </div>
-            <div class="palette-container">
-                <div class="palette-block" draggable="true" data-type="imu" data-i18n="block-imu">IMU Source (X/Y/Z)</div>
-                <div class="palette-block" draggable="true" data-type="filter" data-i18n="block-filter">Low-Pass Filter</div>
-                <div class="palette-block" draggable="true" data-type="harmonic" data-i18n="block-harmonic">Harmonic Rejection</div>
-                <div class="palette-block" draggable="true" data-type="autocorr" data-i18n="block-autocorr">Autocorrelation</div>
-                <div class="palette-block" draggable="true" data-type="kalman" data-i18n="block-kalman">Kalman Filter</div>
-                <div class="palette-block" draggable="true" data-type="output" data-i18n="block-output">Cadence Output</div>
-            </div>
-            
+            <div id="palette-groups" class="palette-groups"></div>
             <div class="tester-controls">
                 <button id="run-sim-btn" class="button button-primary" data-i18n="btn-run-sim">Run Simulation</button>
             </div>
-            
             <div class="graph-panel">
-                <h3 data-i18n="graph-title">Calculated Stroke Rate</h3>
-                <canvas id="output-graph" width="230" height="120"></canvas>
+                <h3 data-i18n="graph-title">Execution Outputs</h3>
+                <pre id="graph-output-list" class="graph-output-list"></pre>
+                <pre id="runtime-diagnostics" class="graph-output-list"></pre>
             </div>
         </aside>
         <main class="canvas-container" id="canvas">
@@ -55,6 +48,10 @@
         </main>
     </div>
     <script src="script.js"></script>
+    <script src="flow-graph.js"></script>
+    <script src="flow-catalog.js"></script>
+    <script src="flow-runtime-client.js"></script>
+    <script src="flow-builder-viewmodel.js"></script>
     <script src="flow.js"></script>
 </body>
 </html>
