@@ -63,6 +63,7 @@ The lag values are derived from the firmware constants:
 3. Remove contract drift between catalog generation, preview execution, graph compilation, and BLE upload.
 4. Keep the browser within the OTA protocol limits already defined by the firmware and the OTA pipeline service plan.
 5. Make the firmware-default pipeline available as an explicit preset so users start from the real embedded behavior.
+6. Add replayable sample data so preview can render a final cadence estimate chart for the firmware-default pipeline.
 
 ## Non-Goals
 
@@ -71,6 +72,7 @@ The lag values are derived from the firmware constants:
 - Do not redesign the visual editor layout.
 - Do not expand OTA protocol limits beyond the current firmware caps.
 - Do not preserve older hidden-axis source behavior as a first-class editing model.
+- Do not add per-stage oscilloscope-style plotting in this phase.
 
 ## OTA and Firmware Limits
 
@@ -175,6 +177,72 @@ That means:
 
 The important point is not the transport format itself. The important point is that preview and upload cannot each reinterpret the graph differently.
 
+## Replay Data And Output Chart
+
+Preview needs real input data if it is going to produce a meaningful output chart.
+
+### Scope
+
+This phase adds only one plotted output:
+
+- final cadence estimate over time
+
+It does not add:
+
+- per-node signal charts
+- raw X/Y/Z trace plotting as a first-class feature
+- simultaneous multi-stage visualization
+
+### Required sample data
+
+The repository should include at least one replayable Polar log fixture captured at `52 Hz`.
+
+The preferred fixture format is CSV because it is easy to inspect, diff, and replace. The fixture should contain enough information to reconstruct the `raw_window` packet stream required by the WASM runtime.
+
+Minimum columns:
+
+- `timestamp_ms`
+- `x`
+- `y`
+- `z`
+
+Recommended properties:
+
+- sampled from the same Polar configuration used by the firmware
+- long enough to contain several paddle strokes
+- clean enough to produce a visible cadence estimate curve
+
+### Browser data flow
+
+The preview path should:
+
+1. load the CSV fixture
+2. parse it into a normalized in-memory sample sequence
+3. convert that sequence into the runtime input packet format expected by the WASM bridge
+4. execute the compiled firmware-faithful graph over replay windows
+5. record the final cadence estimate emitted by the graph at each execution step
+6. render that estimate as a simple time-series chart
+
+### Runtime data shape
+
+The WASM bridge already expects structured packet input rather than CSV text directly. The CSV import layer is therefore a browser concern, not a WASM concern.
+
+For the firmware-default pipeline, replay data should be converted into `raw_window` input packets with:
+
+- `sample_rate_hz = 52`
+- `kind = raw_window`
+- windowed `x`, `y`, `z` arrays
+
+The final chart series should be built from the last bound pipeline output, which for the default preset is the final cadence estimate from `suivi.kalman_2d`.
+
+### UX expectation
+
+The chart only needs to answer one question:
+
+- what cadence estimate would this pipeline produce over the replay log?
+
+That means a simple line chart with time on the X axis and cadence on the Y axis is sufficient for this phase.
+
 ## Catalog Generation
 
 The checked-in catalog at `flow-builder/assets/flow-block-catalog.json` must be regenerated from the vendored firmware snapshot plus a minimal metadata layer.
@@ -249,6 +317,15 @@ Add a golden test for the current firmware-default Polar graph that verifies:
 ### Preview/upload parity tests
 
 Add regression tests proving that preview and upload consume the same effective graph structure and params for the default firmware preset.
+
+### Replay tests
+
+Add tests for the replay path that verify:
+
+- the sample CSV fixture parses successfully
+- replay packets use `sample_rate_hz = 52`
+- the default firmware preset produces a final cadence estimate series
+- the plotted output is sourced from the final bound cadence estimate, not from an intermediate node
 
 ### Migration tests
 
