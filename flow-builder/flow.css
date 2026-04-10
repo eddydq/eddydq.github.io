@@ -94,13 +94,14 @@ html {
 .app-container {
     display: flex;
     height: calc(100vh - 6.2rem);
-    width: min(100vw, 1440px);
+    width: min(calc(100% - 2rem), 1440px);
     margin: 1rem auto 0;
 }
 
 .sidebar {
     position: relative;
     flex: 0 0 332px;
+    min-width: 0;
     z-index: 10;
     overflow: visible;
     transition: flex-basis 0.32s cubic-bezier(0.22, 1, 0.36, 1);
@@ -634,7 +635,7 @@ html {
 
 .sidebar.is-collapsed .panel-dock-sidebar {
     left: 0;
-    margin-left: 0.35rem;
+    margin-left: 0;
 }
 
 .bottom-console.is-collapsed {
@@ -718,7 +719,7 @@ html {
         height: auto;
         min-height: calc(100vh - 7rem);
         flex-direction: column;
-        width: 100%;
+        width: min(calc(100% - 1rem), 1440px);
         margin-top: 0.75rem;
     }
 
@@ -753,7 +754,7 @@ html {
 
     .sidebar.is-collapsed .panel-dock-sidebar {
         top: 0.75rem;
-        left: 0.35rem;
+        left: 0;
         right: auto;
         margin-top: 0;
     }

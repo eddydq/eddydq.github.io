@@ -31,6 +31,10 @@ assert.doesNotMatch(html, /class="right-console"/);
 
 assert.match(css, /\.bottom-console\s*\{/);
 assert.match(css, /\.bottom-console\.is-collapsed\s*\{/);
+assert.match(css, /\.app-container\s*\{[^}]*width:\s*min\(calc\(100%\s*-\s*2rem\),\s*1440px\);/s);
+assert.match(css, /\.sidebar\s*\{[^}]*min-width:\s*0;/s);
 assert.match(css, /\.sidebar\.is-collapsed \.sidebar-panel-content\s*\{/);
+assert.match(css, /\.sidebar\.is-collapsed \.panel-dock-sidebar\s*\{[^}]*left:\s*0;[^}]*margin-left:\s*0;/s);
+assert.match(css, /@media \(max-width:\s*980px\)\s*\{[\s\S]*?\.app-container\s*\{[^}]*width:\s*min\(calc\(100%\s*-\s*1rem\),\s*1440px\);/s);
 assert.match(css, /\.panel-dock-console\s*\{/);
 assert.doesNotMatch(css, /\.right-console\s*\{/);
