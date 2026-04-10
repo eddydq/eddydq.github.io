@@ -1176,6 +1176,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    if (globalThis.FlowPanelDocks && typeof globalThis.FlowPanelDocks.bindPanelDocks === 'function') {
+        globalThis.FlowPanelDocks.bindPanelDocks({
+            sidebar: document.getElementById('dsp-sidebar'),
+            consolePane: document.getElementById('execution-console'),
+            sidebarDock: document.getElementById('sidebar-dock-btn'),
+            consoleDock: document.getElementById('console-dock-btn'),
+            updateWires() {
+                setTimeout(updateWires, 350);
+            }
+        });
+    }
+
     try {
         catalog = await FlowCatalog.loadCatalog();
         setStatus('flow-status-ready', 'Catalog ready');
