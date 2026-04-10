@@ -24,7 +24,6 @@ html {
 }
 
 .flow-site-header {
-<<<<<<< HEAD
     width: min(calc(100% - 2rem), 1420px);
     margin: 1rem auto 0;
 }
@@ -239,53 +238,6 @@ html {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-<<<<<<< HEAD
-.button-primary {
-    background: var(--water);
-    color: var(--navy);
-    box-shadow: var(--hard-shadow-md);
-}
-
-.button-primary:hover {
-    background: var(--water-strong);
-    transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0 var(--navy);
-}
-
-.bottom-console {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 180px;
-    background: var(--navy-deep);
-    color: #fff;
-    border-top: 3px solid var(--navy);
-    display: flex;
-    flex-direction: column;
-    z-index: 5;
-}
-
-.bottom-console h3 {
-    margin: 0;
-    padding: 8px 12px;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    color: var(--mist);
-    font-weight: 800;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.console-outputs {
-    display: flex;
-    flex-direction: row;
-    flex: 1;
-    overflow: hidden;
-}
-
-.bottom-console .graph-output-list {
-    flex: 1;
-=======
 .console-header h3 {
     margin: 0;
     padding: 0;
@@ -313,18 +265,11 @@ html {
     flex: 1 1 50%;
     margin: 0;
     padding: 12px;
->>>>>>> feature/panel-docks
     border: none;
     border-right: 1px solid rgba(255, 255, 255, 0.1);
     background: transparent;
     color: var(--foam);
     box-shadow: none;
-<<<<<<< HEAD
-    padding: 12px;
-    overflow: auto;
-    font-size: 0.74rem;
-    margin: 0;
-=======
     overflow: auto;
     font-size: 0.74rem;
     line-height: 1.45;
@@ -333,7 +278,6 @@ html {
 
 .graph-output-list:last-child {
     border-right: none;
->>>>>>> feature/panel-docks
 }
 
 .canvas-container {
@@ -614,79 +558,6 @@ html {
     --port-fill: #2d8f5b;
 }
 
-<<<<<<< HEAD
-.sidebar,
-.bottom-console {
-    transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
-
-.sidebar {
-    position: relative;
-    flex: 0 0 320px;
-    overflow: visible;
-}
-
-.sidebar-header-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 10px;
-}
-
-.sidebar.is-collapsed {
-    width: 72px;
-    flex-basis: 72px;
-}
-
-.sidebar.is-collapsed .sidebar-header {
-    padding: 16px 0 0;
-    border-bottom: none;
-    background: transparent;
-}
-
-.sidebar.is-collapsed .sidebar-header-top {
-    margin-bottom: 0;
-}
-
-.sidebar.is-collapsed h2,
-.sidebar.is-collapsed .status-pill,
-.sidebar.is-collapsed .palette-groups {
-    display: none;
-}
-
-.bottom-console {
-    overflow: visible;
-}
-
-.bottom-console.is-collapsed {
-    height: 48px;
-}
-
-.bottom-console.is-collapsed .console-outputs {
-    display: none;
-}
-
-.bottom-console.is-collapsed .console-header {
-    border-bottom-color: transparent;
-}
-
-.console-header {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 8px 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.console-header h3 {
-    margin: 0;
-    padding: 0;
-    border: none;
-}
-
-=======
->>>>>>> feature/panel-docks
 .panel-dock {
     position: absolute;
     display: inline-flex;
@@ -706,10 +577,7 @@ html {
     line-height: 1;
     cursor: pointer;
     z-index: 12;
-<<<<<<< HEAD
-=======
     transition: box-shadow 120ms ease, background 120ms ease;
->>>>>>> feature/panel-docks
 }
 
 .panel-dock:hover {
@@ -721,23 +589,12 @@ html {
     box-shadow: var(--hard-shadow-sm);
 }
 
-<<<<<<< HEAD
-.panel-dock[data-state="collapsed"] {
-    background: var(--foam);
-}
-
-=======
->>>>>>> feature/panel-docks
 .panel-dock-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-width: 0.9rem;
-<<<<<<< HEAD
-    font-size: 0.9rem;
-=======
     font-size: 1rem;
->>>>>>> feature/panel-docks
     font-weight: 800;
 }
 
@@ -761,9 +618,6 @@ html {
     margin-bottom: 0.7rem;
 }
 
-<<<<<<< HEAD
-/* Icon Buttons Configuration */
-=======
 .sidebar.is-collapsed {
     flex-basis: 0;
 }
@@ -793,7 +647,6 @@ html {
     transform: translateY(12px);
     pointer-events: none;
 }
->>>>>>> feature/panel-docks
 
 .icon-button {
     display: inline-flex;
@@ -809,10 +662,7 @@ html {
     color: var(--navy);
     box-shadow: var(--hard-shadow-md);
     padding: 0;
-<<<<<<< HEAD
-=======
     flex-shrink: 0;
->>>>>>> feature/panel-docks
 }
 
 .icon-button:hover {
@@ -839,11 +689,7 @@ html {
     color: var(--navy);
 }
 
-<<<<<<< HEAD
-@media (max-width: 900px) {
-=======
 @media (max-width: 980px) {
->>>>>>> feature/panel-docks
     body,
     html {
         overflow: auto;
@@ -879,23 +725,13 @@ html {
     .sidebar {
         flex-basis: auto;
         width: 100%;
-<<<<<<< HEAD
-        flex-basis: auto;
-=======
     }
 
     .sidebar-panel {
->>>>>>> feature/panel-docks
         border-right: none;
         border-bottom: 3px solid var(--navy);
     }
 
-<<<<<<< HEAD
-    .sidebar.is-collapsed {
-        width: 100%;
-        min-height: 1.5rem;
-        flex-basis: auto;
-=======
     .sidebar-panel-content {
         width: 100%;
         min-width: 100%;
@@ -903,7 +739,6 @@ html {
 
     .sidebar.is-collapsed {
         flex-basis: 0;
->>>>>>> feature/panel-docks
     }
 
     .panel-dock-sidebar {
@@ -916,8 +751,6 @@ html {
         transform: none;
     }
 
-<<<<<<< HEAD
-=======
     .sidebar.is-collapsed .panel-dock-sidebar {
         top: 0.75rem;
         left: 0.35rem;
@@ -925,7 +758,6 @@ html {
         margin-top: 0;
     }
 
->>>>>>> feature/panel-docks
     .panel-dock-console {
         right: 0.75rem;
         margin-bottom: 0.5rem;

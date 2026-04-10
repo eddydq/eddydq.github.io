@@ -4,9 +4,9 @@ $root = Split-Path -Parent $PSScriptRoot
 
 $requiredFiles = @(
     "index.html",
-    "styles.css",
-    "script.js",
-    "simple-flowchart.js",
+    "css/styles.css",
+    "js/script.js",
+    "js/simple-flowchart.js",
     "assets/logo.svg"
 )
 
@@ -18,8 +18,8 @@ foreach ($path in $requiredFiles) {
 }
 
 $html = Get-Content (Join-Path $root "index.html") -Raw
-$css = Get-Content (Join-Path $root "styles.css") -Raw
-$js = Get-Content (Join-Path $root "script.js") -Raw
+$css = Get-Content (Join-Path $root "css/styles.css") -Raw
+$js = Get-Content (Join-Path $root "js/script.js") -Raw
 $flowHtmlPath = Join-Path $root "flow-builder/index.html"
 if (-not (Test-Path -LiteralPath $flowHtmlPath)) {
     throw "Missing required file: flow-builder/index.html"
@@ -30,8 +30,8 @@ if ($html -notmatch "Paddling Pulse") {
     throw "Expected the site title to mention Paddling Pulse."
 }
 
-if ($html -notmatch "styles\.css" -or $html -notmatch "script\.js" -or $html -notmatch "simple-flowchart\.js") {
-    throw "Expected index.html to reference styles.css, simple-flowchart.js, and script.js."
+if ($html -notmatch "css/styles\.css" -or $html -notmatch "js/script\.js" -or $html -notmatch "simple-flowchart\.js") {
+    throw "Expected index.html to reference css/styles.css, simple-flowchart.js, and js/script.js."
 }
 
 if ($html -notmatch "data-reveal") {
@@ -120,6 +120,26 @@ if ($flowHtml -notmatch 'id="graph-output-list"') {
 
 if ($flowHtml -notmatch 'id="runtime-diagnostics"') {
     throw 'flow-builder/index.html is missing runtime-diagnostics'
+}
+
+if ($flowHtml -match '<<<<<<<|=======|>>>>>>>') {
+    throw 'flow-builder/index.html still contains merge markers'
+}
+
+if ($flowHtml -notmatch '\.\./css/styles\.css') {
+    throw 'flow-builder/index.html should reference ../css/styles.css'
+}
+
+if ($flowHtml -notmatch '\.\./js/script\.js') {
+    throw 'flow-builder/index.html should reference ../js/script.js'
+}
+
+if ($flowHtml -notmatch 'console-pane bottom-console') {
+    throw 'flow-builder/index.html should keep the bottom execution console layout'
+}
+
+if ($flowHtml -match 'right-console') {
+    throw 'flow-builder/index.html should not use the abandoned right-console layout'
 }
 
 $forbiddenLegacyFlowBuilderPaths = @(
