@@ -77,21 +77,21 @@ bindPanelDocks({
 assert.equal(sidebarDock.dataset.state, 'expanded');
 assert.equal(sidebarDock.attributes['aria-expanded'], 'true');
 assert.match(sidebarDock.attributes['aria-label'], /hide dsp pipeline/i);
-assert.equal(sidebarDock.querySelector('.panel-dock-icon').textContent, '<');
+assert.equal(sidebarDock.querySelector('.panel-dock-icon').textContent, '-');
 
 assert.equal(consoleDock.dataset.state, 'collapsed');
 assert.equal(consoleDock.attributes['aria-expanded'], 'false');
 assert.match(consoleDock.attributes['aria-label'], /show execution outputs/i);
-assert.equal(consoleDock.querySelector('.panel-dock-icon').textContent, '^');
+assert.equal(consoleDock.querySelector('.panel-dock-icon').textContent, '+');
 
 sidebarDock.click();
 assert.equal(sidebar.classList.contains('is-collapsed'), true);
 assert.equal(sidebarDock.dataset.state, 'collapsed');
-assert.equal(sidebarDock.querySelector('.panel-dock-icon').textContent, '>');
+assert.equal(sidebarDock.querySelector('.panel-dock-icon').textContent, '+');
 assert.equal(updateCount, 1);
 
 consoleDock.click();
 assert.equal(consolePane.classList.contains('is-collapsed'), false);
 assert.equal(consoleDock.dataset.state, 'expanded');
-assert.equal(consoleDock.querySelector('.panel-dock-icon').textContent, 'v');
+assert.equal(consoleDock.querySelector('.panel-dock-icon').textContent, '-');
 assert.equal(updateCount, 2);

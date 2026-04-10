@@ -34,7 +34,7 @@
             : null;
 
         if (iconNode) {
-            iconNode.textContent = collapsed ? options.collapsedIcon : options.expandedIcon;
+            iconNode.textContent = collapsed ? '+' : '-';
         }
     }
 
@@ -76,32 +76,16 @@
         updateWires
     }) {
         const toggleSidebar = bindDockToggle(sidebar, sidebarDock, {
-            fallbackLabel: 'sidebar',
-            expandedIcon: '<',
-            collapsedIcon: '>'
+            fallbackLabel: 'sidebar'
         }, updateWires);
 
         const toggleConsole = bindDockToggle(consolePane, consoleDock, {
-            fallbackLabel: 'execution outputs',
-            expandedIcon: 'v',
-            collapsedIcon: '^'
+            fallbackLabel: 'execution outputs'
         }, updateWires);
 
         return {
             toggleSidebar,
-            toggleConsole,
-            sync() {
-                syncDockButton(sidebarDock, Boolean(sidebar && sidebar.classList.contains(COLLAPSED_CLASS)), {
-                    fallbackLabel: 'sidebar',
-                    expandedIcon: '<',
-                    collapsedIcon: '>'
-                });
-                syncDockButton(consoleDock, Boolean(consolePane && consolePane.classList.contains(COLLAPSED_CLASS)), {
-                    fallbackLabel: 'execution outputs',
-                    expandedIcon: 'v',
-                    collapsedIcon: '^'
-                });
-            }
+            toggleConsole
         };
     }
 
