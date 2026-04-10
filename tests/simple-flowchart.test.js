@@ -4,7 +4,7 @@ const {
     createSimpleFlowState,
     transitionSimpleFlowState,
     buildSimpleFlowModel
-} = require('../simple-flowchart.js');
+} = require('../js/simple-flowchart.js');
 
 assert.deepStrictEqual(createSimpleFlowState(), { mode: 'overview', expandedLanes: [] });
 assert.deepStrictEqual(createSimpleFlowState({ mode: 'inline', expandedLanes: ['dsp'] }), { mode: 'inline', expandedLanes: ['dsp'] });

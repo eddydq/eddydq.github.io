@@ -25,10 +25,25 @@ html {
 
 .flow-site-header {
     width: 100%;
-    padding: 1.5rem 2rem;
+    padding: 1rem 2rem;
     border-bottom: 3px solid var(--navy);
     background: #fff;
     margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-tester-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.header-tester-controls .button {
+    min-height: 2.2rem;
+    padding: 0.4rem 1rem;
+    width: auto;
 }
 
 .app-container {
@@ -158,34 +173,48 @@ html {
     box-shadow: 2px 2px 0 var(--navy);
 }
 
-.graph-panel {
-    padding: 20px;
-    border-top: 2px solid var(--navy);
-    background: #fff;
-    display: grid;
-    gap: 10px;
+.bottom-console {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 180px;
+    background: var(--navy-deep);
+    color: #fff;
+    border-top: 3px solid var(--navy);
+    display: flex;
+    flex-direction: column;
+    z-index: 5;
 }
 
-.graph-panel h3 {
+.bottom-console h3 {
     margin: 0;
-    font-size: 0.85rem;
+    padding: 8px 12px;
+    font-size: 0.75rem;
     text-transform: uppercase;
-    color: var(--navy);
+    color: var(--mist);
     font-weight: 800;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.graph-output-list {
-    margin: 0;
-    min-height: 84px;
-    border: 2px solid var(--navy);
-    background: var(--foam);
-    padding: 10px;
-    font-size: 0.74rem;
-    line-height: 1.45;
-    color: var(--ink);
+.console-outputs {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    overflow: hidden;
+}
+
+.bottom-console .graph-output-list {
+    flex: 1;
+    border: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    background: transparent;
+    color: var(--foam);
+    box-shadow: none;
+    padding: 12px;
     overflow: auto;
-    white-space: pre-wrap;
-    box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.05);
+    font-size: 0.74rem;
+    margin: 0;
 }
 
 .canvas-container {
@@ -203,7 +232,7 @@ html {
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 0;
+    z-index: 3;
 }
 
 .blocks-layer {
@@ -249,6 +278,7 @@ html {
     min-width: 240px;
     min-height: 156px;
     border: 2px solid var(--navy);
+    border-radius: var(--radius-sm);
     background: #fff;
     box-shadow: var(--hard-shadow-md);
     user-select: none;
@@ -408,7 +438,8 @@ html {
 
 .param-field {
     display: grid;
-    gap: 4px;
+    gap: 6px;
+    margin-bottom: 8px;
     font-size: 0.68rem;
     font-weight: 700;
     color: var(--slate);
@@ -428,11 +459,11 @@ html {
 .block-select,
 .block-input {
     width: 100%;
-    padding: 6px 8px;
-    border: 1px solid var(--navy);
-    border-radius: 2px;
+    padding: 8px;
+    border: 2px solid var(--navy);
+    border-radius: var(--radius-sm);
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     font-family: 'Sora', sans-serif;
     color: var(--navy);
     background: var(--foam);
@@ -464,6 +495,181 @@ html {
     --port-fill: #2d8f5b;
 }
 
+.sidebar,
+.bottom-console {
+    transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.sidebar {
+    position: relative;
+    flex: 0 0 320px;
+    overflow: visible;
+}
+
+.sidebar-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.sidebar.is-collapsed {
+    width: 72px;
+    flex-basis: 72px;
+}
+
+.sidebar.is-collapsed .sidebar-header {
+    padding: 16px 0 0;
+    border-bottom: none;
+    background: transparent;
+}
+
+.sidebar.is-collapsed .sidebar-header-top {
+    margin-bottom: 0;
+}
+
+.sidebar.is-collapsed h2,
+.sidebar.is-collapsed .status-pill,
+.sidebar.is-collapsed .palette-groups {
+    display: none;
+}
+
+.bottom-console {
+    overflow: visible;
+}
+
+.bottom-console.is-collapsed {
+    height: 48px;
+}
+
+.bottom-console.is-collapsed .console-outputs {
+    display: none;
+}
+
+.bottom-console.is-collapsed .console-header {
+    border-bottom-color: transparent;
+}
+
+.console-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 8px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.console-header h3 {
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.panel-dock {
+    position: absolute;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0.8rem;
+    border: 2px solid var(--navy);
+    border-radius: var(--radius-sm);
+    background: #fff;
+    color: var(--navy);
+    box-shadow: var(--hard-shadow-md);
+    font-family: 'Sora', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 12;
+}
+
+.panel-dock:hover {
+    background: var(--foam);
+    box-shadow: 6px 6px 0 var(--navy);
+}
+
+.panel-dock:active {
+    box-shadow: var(--hard-shadow-sm);
+}
+
+.panel-dock[data-state="collapsed"] {
+    background: var(--foam);
+}
+
+.panel-dock-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0.9rem;
+    font-size: 0.9rem;
+    font-weight: 800;
+}
+
+.panel-dock-text {
+    white-space: nowrap;
+}
+
+.panel-dock-sidebar {
+    top: 1rem;
+    left: 100%;
+    margin-left: 0.75rem;
+    padding: 0.8rem 0.5rem;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+}
+
+.panel-dock-console {
+    right: 1rem;
+    bottom: 100%;
+    margin-bottom: 0.7rem;
+}
+
+/* Icon Buttons Configuration */
+
+.icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-sm);
+    border: 2px solid var(--navy);
+    transition: transform 100ms ease, box-shadow 100ms ease, background 100ms ease;
+    cursor: pointer;
+    background: #fff;
+    color: var(--navy);
+    box-shadow: var(--hard-shadow-md);
+    padding: 0;
+}
+
+.icon-button:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 var(--navy);
+}
+
+.icon-button:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 var(--navy);
+}
+
+.play-btn {
+    background: var(--water);
+    color: var(--navy);
+}
+
+.play-btn:hover {
+    background: var(--water-strong);
+}
+
+.upload-btn {
+    background: var(--foam);
+    color: var(--navy);
+}
+
 @media (max-width: 900px) {
     body,
     html {
@@ -478,8 +684,30 @@ html {
 
     .sidebar {
         width: 100%;
+        flex-basis: auto;
         border-right: none;
         border-bottom: 3px solid var(--navy);
+    }
+
+    .sidebar.is-collapsed {
+        width: 100%;
+        min-height: 1.5rem;
+        flex-basis: auto;
+    }
+
+    .panel-dock-sidebar {
+        top: 100%;
+        left: auto;
+        right: 1rem;
+        margin-top: 0.75rem;
+        margin-left: 0;
+        writing-mode: horizontal-tb;
+        transform: none;
+    }
+
+    .panel-dock-console {
+        right: 0.75rem;
+        margin-bottom: 0.5rem;
     }
 
     .canvas-container {

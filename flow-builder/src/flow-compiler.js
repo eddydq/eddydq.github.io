@@ -119,13 +119,13 @@
         switch (key) {
         case 'lis3dh_source':
         case 'source.lis3dh':
-            return [...u16(params.sample_rate_hz ?? params.sampleRateHz ?? 100), clampByte(params.resolution ?? 12)];
+            return [...u16(params.sample_rate_hz ?? params.sampleRateHz ?? 100)];
         case 'mpu6050_source':
         case 'source.mpu6050':
-            return [...u16(params.sample_rate_hz ?? params.sampleRateHz ?? 100), clampByte(params.resolution ?? 16)];
+            return [...u16(params.sample_rate_hz ?? params.sampleRateHz ?? 100)];
         case 'polar_source':
         case 'source.polar':
-            return [clampByte(params.axis_mask ?? params.axisMask ?? 0x07)];
+            return [...u16(params.sample_rate_hz ?? params.sampleRateHz ?? 52)];
         case 'select_axis':
         case 'representation.select_axis':
             return [encodeAxis(params.axis)];
@@ -207,6 +207,58 @@
         return Number.isInteger(socketIndex) ? socketIndex : 0;
     }
 
+    const SOURCE_BLOCK_IDS = new Set(['source.lis3dh', 'source.mpu6050', 'source.polar']);
+
+    function injectAxisBlocks(graph) {
+        const nodes = graph.nodes.slice();
+        const edges = graph.edges.slice();
+        const injected = new Map();
+
+        for (let i = nodes.length - 1; i >= 0; i--) {
+            const node = nodes[i];
+            if (!SOURCE_BLOCK_IDS.has(normalizeBlockName(node.blockId))) {
+                continue;
+            }
+
+            const axis = String(node.params.axis || 'z').toLowerCase();
+            const isMagnitude = axis === 'magnitude' || axis === 'mag';
+            const injectedIndex = nodes.length;
+            const injectedBlockId = isMagnitude
+                ? 'representation.vector_magnitude'
+                : 'representation.select_axis';
+            const injectedParams = isMagnitude ? {} : { axis: axis };
+
+            nodes.push({
+                source: null,
+                index: injectedIndex,
+                nodeId: `__axis_${node.nodeId}`,
+                blockId: injectedBlockId,
+                params: injectedParams
+            });
+
+            for (const edge of edges) {
+                if (edge.src === node.index) {
+                    edge.src = injectedIndex;
+                }
+            }
+
+            edges.push({
+                src: node.index,
+                srcPort: 0,
+                dst: injectedIndex,
+                dstPort: 0
+            });
+
+            injected.set(node.index, injectedIndex);
+        }
+
+        for (let i = 0; i < nodes.length; i++) {
+            nodes[i].index = i;
+        }
+
+        return { nodes, edges };
+    }
+
     function normalizeGraph(graph) {
         const nodes = (graph.nodes || []).map((node, index) => ({
             source: node,
@@ -248,7 +300,7 @@
             }
         }
 
-        return { nodes, edges };
+        return injectAxisBlocks({ nodes, edges });
     }
 
     function crc16(data) {

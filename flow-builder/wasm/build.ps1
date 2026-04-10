@@ -88,6 +88,12 @@ function Invoke-Catalog {
     if ($LASTEXITCODE -ne 0) {
         throw "catalog extraction failed with exit code $LASTEXITCODE"
     }
+
+    $catalogJson = Join-Path $AssetsDir 'flow-block-catalog.json'
+    $catalogJs = Join-Path $AssetsDir 'flow-block-catalog.js'
+    $json = Get-Content -Raw -LiteralPath $catalogJson
+    Set-Content -LiteralPath $catalogJs -Value ("globalThis.FLOW_EMBEDDED_CATALOG = " + $json + ";`n") -NoNewline
+    Write-Host "wrote $catalogJs"
 }
 
 function Invoke-Clean {

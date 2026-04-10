@@ -56,8 +56,8 @@
         }
 
         const device = await bluetooth.requestDevice({
-            filters: [{ services: [PP_SERVICE_UUID] }],
-            optionalServices: [PP_SERVICE_UUID]
+            filters: [{ services: ['cycling_speed_and_cadence'] }], // The device advertises standard CSC
+            optionalServices: [PP_SERVICE_UUID]                     // Allow access to our custom pipeline service
         });
         const server = await device.gatt.connect();
         const service = await server.getPrimaryService(PP_SERVICE_UUID);

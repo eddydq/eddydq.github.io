@@ -8,12 +8,12 @@ const catalog = {
             block_id: 'source.polar',
             group: 'source',
             inputs: [],
-            outputs: [{ name: 'primary', kind: 'raw_window' }]
+            outputs: [{ name: 'primary', kind: 'series' }]
         },
         {
-            block_id: 'representation.select_axis',
-            group: 'representation',
-            inputs: [{ name: 'source', kinds: ['raw_window'], cardinality: 'one' }],
+            block_id: 'pretraitement.hpf_gravity',
+            group: 'pretraitement',
+            inputs: [{ name: 'source', kinds: ['series'], cardinality: 'one' }],
             outputs: [{ name: 'primary', kind: 'series' }]
         },
         {
@@ -36,8 +36,8 @@ const graph = {
     nodes: [
         {
             node_id: 'n1',
-            block_id: 'representation.select_axis',
-            params: { axis: 'y' },
+            block_id: 'pretraitement.hpf_gravity',
+            params: { cutoff_hz: 1 },
             ui: { position: { x: 140, y: 120 } }
         },
         {
@@ -71,7 +71,7 @@ const model = createBuilderViewModel({
     selection: { activeSourcePort: 'n1.primary' }
 });
 
-assert.deepStrictEqual(model.paletteGroups.map(group => group.group), ['source', 'representation', 'estimation', 'validation']);
+assert.deepStrictEqual(model.paletteGroups.map(group => group.group), ['source', 'pretraitement', 'estimation', 'validation']);
 assert.equal(model.nodeCards[0].outputPorts[0].slots[0].colorClass, 'port-kind-series');
 assert.equal(model.nodeCards[1].inputPorts[0].slots[0].acceptsActiveConnection, true);
 assert.deepStrictEqual(model.nodeCards[2].position, { x: 700, y: 200 });

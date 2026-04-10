@@ -1,4 +1,4 @@
-{
+globalThis.FLOW_EMBEDDED_CATALOG = {
   "blocks": [
     {
       "firmware_block_id": 1,
@@ -588,3 +588,4 @@
     }
   ]
 }
+;

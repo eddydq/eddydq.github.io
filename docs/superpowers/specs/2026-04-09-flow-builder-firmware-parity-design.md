@@ -230,9 +230,9 @@ Recommended properties:
 The preview path should:
 
 1. load the default checked-in CSV fixture automatically when the page opens
-2. parse it into a normalized in-memory sample sequence
-3. convert that sequence into the runtime input packet format expected by the WASM bridge
-4. execute the compiled firmware-faithful graph over replay windows
+2. parse it into timestamped raw-window snapshots
+3. convert each snapshot into the runtime input packet format expected by the WASM bridge
+4. execute the compiled firmware-faithful graph once per replay snapshot
 5. record the final cadence estimate emitted by the graph at each execution step
 6. render that estimate as a simple time-series chart
 
@@ -242,13 +242,19 @@ Manual fixture replacement can be added later, but the default experience should
 
 The WASM bridge already expects structured packet input rather than CSV text directly. The CSV import layer is therefore a browser concern, not a WASM concern.
 
-For the firmware-default pipeline, replay data should be converted into `raw_window` input packets with:
+For the firmware-default pipeline, each CSV row should be converted into one `raw_window` input packet with:
 
 - `sample_rate_hz = 52`
 - `kind = raw_window`
 - windowed `x`, `y`, `z` arrays
 
-The CSV import layer must flatten the packed-window rows from `polar_log_002.csv` into a continuous replay stream before rebuilding the runtime windows used during preview execution.
+The preview path should treat `polar_log_002.csv` as a sequence of timestamped sample-store snapshots:
+
+- `timestamp` is the X-axis anchor for the cadence chart
+- `count` is the number of valid samples currently present in that snapshot
+- the first `count` values from each axis group become the raw-window payload for that run
+
+It should not flatten all rows into one continuous stream. Each row is already the replay window for one preview execution step.
 
 The final chart series should be built from the last bound pipeline output, which for the default preset is the final cadence estimate from `suivi.kalman_2d`.
 
@@ -341,7 +347,7 @@ Add tests for the replay path that verify:
 
 - the checked-in copy of `polar_log_002.csv` loads automatically
 - the sample CSV fixture parses successfully
-- `count` is respected when flattening packed-window rows
+- `count` is respected when extracting per-row raw-window snapshots
 - replay packets use `sample_rate_hz = 52`
 - the default firmware preset produces a final cadence estimate series
 - the plotted output is sourced from the final bound cadence estimate, not from an intermediate node

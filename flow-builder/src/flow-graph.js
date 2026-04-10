@@ -16,12 +16,6 @@
     };
     const FIRMWARE_MAX_NODES = 16;
     const FIRMWARE_MAX_EDGES = 20;
-    const SYSTEM_INPUT_KINDS = {
-        raw: 'raw_window',
-        series: 'series',
-        candidate: 'candidate',
-        estimate: 'estimate'
-    };
 
     function isPlainObject(value) {
         return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -122,15 +116,7 @@
     }
 
     function getSystemInputKinds(catalog) {
-        if (catalog && catalog.system_inputs && typeof catalog.system_inputs === 'object') {
-            return catalog.system_inputs;
-        }
-
-        if (catalog && catalog.systemInputs && typeof catalog.systemInputs === 'object') {
-            return catalog.systemInputs;
-        }
-
-        return SYSTEM_INPUT_KINDS;
+        return {};
     }
 
     function topologicallySortGraph(graph) {
@@ -143,9 +129,6 @@
             const sourceRef = splitRef(edge.source);
             const targetRef = splitRef(edge.target);
 
-            if (sourceRef.node_id === 'input') {
-                continue;
-            }
 
             if (!nodeMap.has(sourceRef.node_id) || !nodeMap.has(targetRef.node_id)) {
                 continue;
@@ -239,16 +222,8 @@
                 errors.push(`single-cardinality input already connected: ${targetKey}`);
             }
 
-            if (sourceRef.node_id === 'input') {
-                const sourceKind = systemInputKinds[sourceRef.port];
-                if (!sourceKind) {
-                    errors.push(`unknown system input: ${edge.source}`);
-                    continue;
-                }
-
-                if (!Array.isArray(inputPort.kinds) || !inputPort.kinds.includes(sourceKind)) {
-                    errors.push(`packet kind mismatch: ${edge.source} -> ${edge.target}`);
-                }
+            if (!nodeMap.has(sourceRef.node_id)) {
+                errors.push(`unknown source node: ${sourceRef.node_id}`);
                 continue;
             }
 

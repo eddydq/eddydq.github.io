@@ -10,6 +10,10 @@ const {
 } = require('../flow-builder/src/flow-graph.js');
 
 const catalog = {
+    'source.lis3dh': {
+        input_ports: [],
+        output_ports: [{ name: 'primary', kind: 'raw_window' }]
+    },
     'representation.select_axis': {
         input_ports: [{ name: 'source', kinds: ['raw_window'], cardinality: 'one' }],
         output_ports: [{ name: 'primary', kind: 'series' }]
@@ -28,6 +32,10 @@ const catalog = {
 };
 const normalizedCatalog = {
     byId: {
+        'source.lis3dh': {
+            inputs: [],
+            outputs: [{ name: 'primary', kind: 'raw_window' }]
+        },
         'representation.select_axis': {
             inputs: [{ name: 'source', kinds: ['raw_window'], cardinality: 'one' }],
             outputs: [{ name: 'primary', kind: 'series' }]
@@ -48,6 +56,12 @@ const normalizedCatalog = {
 
 const validGraph = createGraphState({
     nodes: [
+        {
+            node_id: 'n0',
+            block_id: 'source.lis3dh',
+            params: { sample_rate_hz: 100 },
+            ui: { position: { x: 20, y: 80 } }
+        },
         {
             node_id: 'n1',
             block_id: 'representation.select_axis',
@@ -72,7 +86,7 @@ const validGraph = createGraphState({
         }
     ],
     connections: [
-        { source: 'input.raw', source_socket: 0, target: 'n1.source', target_socket: 0 },
+        { source: 'n0.primary', source_socket: 0, target: 'n1.source', target_socket: 0 },
         { source: 'n1.primary', source_socket: 0, target: 'n2.source', target_socket: 0 },
         { source: 'n2.primary', source_socket: 0, target: 'n3.source', target_socket: 0 },
         { source: 'n2.primary', source_socket: 1, target: 'n3.source', target_socket: 2 }
@@ -90,10 +104,10 @@ const validGraph = createGraphState({
 });
 
 const clonedGraph = createGraphState(validGraph);
-validGraph.nodes[0].params.tuning.smooth = false;
-assert.equal(clonedGraph.nodes[0].params.tuning.smooth, true);
-validGraph.nodes[2].ui.position.x = 999;
-assert.equal(clonedGraph.nodes[2].ui.position.x, 720);
+validGraph.nodes[1].params.tuning.smooth = false;
+assert.equal(clonedGraph.nodes[1].params.tuning.smooth, true);
+validGraph.nodes[3].ui.position.x = 999;
+assert.equal(clonedGraph.nodes[3].ui.position.x, 720);
 assert.equal(clonedGraph.connections[3].target_socket, 2);
 validGraph.ui.system_nodes.input.x = 1234;
 assert.equal(clonedGraph.ui.system_nodes.input.x, 40);
@@ -102,9 +116,9 @@ assert.equal(SCHEMA_VERSION, 2);
 assert.equal(PACKET_KIND_COLORS.series, 'port-kind-series');
 assert.deepStrictEqual(validateGraph(validGraph, catalog), []);
 assert.deepStrictEqual(validateGraph(validGraph, normalizedCatalog), []);
-assert.deepStrictEqual(topologicallySortGraph(validGraph), ['n1', 'n2', 'n3']);
+assert.deepStrictEqual(topologicallySortGraph(validGraph), ['n0', 'n1', 'n2', 'n3']);
 assert.deepStrictEqual(serializeGraph(validGraph).schema_version, 2);
-assert.deepStrictEqual(serializeGraph(clonedGraph).nodes[2].ui.output_slots.accepted, 2);
+assert.deepStrictEqual(serializeGraph(clonedGraph).nodes[3].ui.output_slots.accepted, 2);
 assert.deepStrictEqual(serializeGraph(clonedGraph).ui.output_bindings.accepted.source_socket, 1);
 assert.match(
     validateGraph({
@@ -148,11 +162,12 @@ assert.equal(
 assert.equal(
     validateGraph(createGraphState({
         nodes: [
+            { node_id: 'n0', block_id: 'source.lis3dh', params: {} },
             { node_id: 'n1', block_id: 'representation.select_axis', params: {} },
             { node_id: 'n2', block_id: 'representation.select_axis', params: {} }
         ],
         connections: [
-            { source: 'input.raw', target: 'n1.source' },
+            { source: 'n0.primary', target: 'n1.source' },
             { source: 'n1.primary', target: 'n2.source' }
         ],
         outputs: {}
@@ -162,11 +177,12 @@ assert.equal(
 assert.equal(
     validateGraph(createGraphState({
         nodes: [
+            { node_id: 'n0', block_id: 'source.lis3dh', params: {} },
             { node_id: 'n1', block_id: 'representation.select_axis', params: {} },
             { node_id: 'n2', block_id: 'estimation.autocorrelation', params: {} }
         ],
         connections: [
-            { source: 'input.raw', target: 'n1.source' },
+            { source: 'n0.primary', target: 'n1.source' },
             { source: 'n1.primary', target: 'n2.missing' }
         ],
         outputs: {}
@@ -179,20 +195,21 @@ assert.equal(
             { node_id: 'n1', block_id: 'representation.select_axis', params: {} }
         ],
         connections: [
-            { source: 'input.typo', target: 'n1.source' }
+            { source: 'bogus.primary', target: 'n1.source' }
         ],
         outputs: {}
-    }), catalog).some(error => /unknown system input/i.test(error)),
+    }), catalog).some(error => /unknown source node/i.test(error)),
     true
 );
 assert.equal(
     validateGraph(createGraphState({
         nodes: [
+            { node_id: 'n0', block_id: 'source.lis3dh', params: {} },
             { node_id: 'n1', block_id: 'representation.select_axis', params: {} },
             { node_id: 'n2', block_id: 'estimation.autocorrelation', params: {} }
         ],
         connections: [
-            { source: 'input.raw', target: 'n1.source' },
+            { source: 'n0.primary', target: 'n1.source' },
             { source: 'n1.primary', target: 'n2.source' },
             { source: 'n1.primary', target: 'n2.source' }
         ],

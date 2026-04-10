@@ -5,7 +5,7 @@ const {
     buildMainFlowchartDefinition,
     transitionFlowchartState,
     getFlowchartActionFromClassName
-} = require('../workflow-diagram.js');
+} = require('../js/workflow-diagram.js');
 
 const overviewState = createFlowchartState();
 assert.deepStrictEqual(overviewState, {

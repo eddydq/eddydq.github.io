@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    const STORAGE_KEY = 'flow-builder-state-v3';
-    const FINAL_OUTPUT_BINDING = 'final';
+    const STORAGE_KEY = 'flow-builder-state-v4';
+    const FINAL_OUTPUT_BINDING = 'cadence';
     const paletteRoot = document.getElementById('palette-groups');
     const blocksLayer = document.getElementById('blocks-layer');
     const wiresLayer = document.getElementById('wires-layer');
@@ -106,38 +106,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function getSystemInputs() {
-        if (catalog && catalog.systemInputs && typeof catalog.systemInputs === 'object') {
-            return catalog.systemInputs;
-        }
-
-        if (catalog && catalog.system_inputs && typeof catalog.system_inputs === 'object') {
-            return catalog.system_inputs;
-        }
-
-        return { raw: 'raw_window' };
+        return {};
     }
 
     function buildDemoInputs() {
-        const sampleCount = 64;
-        const x = new Array(sampleCount).fill(0);
-        const z = new Array(sampleCount).fill(0);
-        const y = Array.from({ length: sampleCount }, (_, index) => ((index % 26) < 13 ? 1 : -1));
-
-        return [
-            {
-                binding_name: 'raw',
-                packet: {
-                    kind: 'raw_window',
-                    data: {
-                        sample_rate_hz: 52,
-                        length: sampleCount,
-                        x,
-                        y,
-                        z
-                    }
-                }
-            }
-        ];
+        return [];
     }
 
     function parseDefaultValue(param) {
@@ -534,22 +507,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         return null;
     }
 
-    function createWirePath(p1, p2) {
-        const dx = Math.max(Math.abs(p2.x - p1.x) * 0.45, 42);
-        const dy = (p2.y - p1.y) * 0.12;
+    function createWirePath(p1, p2, options = {}) {
+        const startIsLeftOut = options.startSide === 'input';
+        const endIsLeftIn = options.endSide !== 'output';
 
-        return `M ${p1.x} ${p1.y} C ${p1.x + dx} ${p1.y + dy}, ${p2.x - dx} ${p2.y - dy}, ${p2.x} ${p2.y}`;
+        const p1OutX = startIsLeftOut ? p1.x - 40 : p1.x + 40;
+        const p2OutX = endIsLeftIn ? p2.x - 40 : p2.x + 40;
+
+        let wrapYOffset = 0;
+        if (options.sourceElement) {
+            const block = options.sourceElement.closest('.canvas-block');
+            if (block) {
+                const blockTop = parseInt(block.style.top) || p1.y;
+                wrapYOffset = (blockTop + block.offsetHeight + 24) - p1.y;
+            }
+        }
+        const wrapDistance = Math.max(wrapYOffset, 40);
+
+        if (!startIsLeftOut && endIsLeftIn && p1OutX <= p2OutX) {
+            const midX = (p1OutX + p2OutX) / 2;
+            return `M ${p1.x} ${p1.y} L ${midX} ${p1.y} L ${midX} ${p2.y} L ${p2.x} ${p2.y}`;
+        }
+
+        const wrapY = p1.y + wrapDistance;
+        return `M ${p1.x} ${p1.y} L ${p1OutX} ${p1.y} L ${p1OutX} ${wrapY} L ${p2OutX} ${wrapY} L ${p2OutX} ${p2.y} L ${p2.x} ${p2.y}`;
     }
 
     function drawWire(p1, p2, options = {}) {
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         const color = options.color || '#172b45';
 
-        path.setAttribute('d', createWirePath(p1, p2));
+        path.setAttribute('d', createWirePath(p1, p2, options));
         path.setAttribute('stroke', color);
         path.setAttribute('stroke-width', options.width || '3');
         path.setAttribute('fill', 'none');
         path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
 
         if (options.temporary) {
             path.setAttribute('stroke-dasharray', '8 6');
@@ -577,7 +570,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             );
 
             if (sourceSocket && targetSocket) {
-                drawWire(getSocketCenter(sourceSocket), getSocketCenter(targetSocket));
+                drawWire(getSocketCenter(sourceSocket), getSocketCenter(targetSocket), { startSide: 'output', endSide: 'input', sourceElement: sourceSocket, targetElement: targetSocket });
             }
         }
 
@@ -593,12 +586,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const targetSocket = findSocketElement('input', `output.${binding}`, 0);
 
             if (sourceSocket && targetSocket) {
-                drawWire(getSocketCenter(sourceSocket), getSocketCenter(targetSocket), { color: '#52616d' });
+                drawWire(getSocketCenter(sourceSocket), getSocketCenter(targetSocket), { color: '#52616d', startSide: 'output', endSide: 'input', sourceElement: sourceSocket, targetElement: targetSocket });
             }
         }
 
         if (pendingConnection) {
-            drawWire(pendingConnection.startPos, pendingConnection.currentPos, { temporary: true, color: '#7caec2' });
+            drawWire(pendingConnection.startPos, pendingConnection.currentPos, { temporary: true, color: '#7caec2', startSide: pendingConnection.side, sourceElement: pendingConnection.element });
         }
     }
 
@@ -631,9 +624,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `;
             }
 
+            const isFixed = Number.isFinite(param.min) && Number.isFinite(param.max) && param.min === param.max;
+
             return `
-                <label class="param-field">
-                    <span>${escapeHtml(param.name)}</span>
+                <label class="param-field ${isFixed ? 'param-fixed' : ''}">
+                    <span>${escapeHtml(param.name)}${isFixed ? ' <em>(fixed)</em>' : ''}</span>
                     <input
                         class="block-input"
                         type="number"
@@ -641,6 +636,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         value="${escapeHtml(value)}"
                         data-node-id="${escapeHtml(card.node_id)}"
                         data-param-name="${escapeHtml(param.name)}"
+                        ${isFixed ? 'disabled' : ''}
                     >
                 </label>
             `;
@@ -704,54 +700,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function renderSystemInputBlock() {
-        const position = getSystemNodePosition('input');
-        const systemInputs = Object.entries(getSystemInputs());
-
-        return `
-            <article
-                class="canvas-block system-block"
-                data-system-node="input"
-                style="left:${position.x}px; top:${position.y}px;"
-            >
-                <div class="block-header" data-drag-kind="system" data-system-kind="input">
-                    <span>System Input</span>
-                </div>
-                <div class="block-body">
-                    <div class="block-content system-block-content">
-                        <p>External packets</p>
-                    </div>
-                    <div class="port-side port-side-right">
-                        ${systemInputs.map(([binding, kind]) => {
-                            const slotCount = getSystemInputSlotCount(binding);
-
-                            return `
-                                <div class="port-group port-group-output">
-                                    <div class="port-group-label">${escapeHtml(binding)}</div>
-                                    <div class="ports-stack ports-stack-output">
-                                        ${Array.from({ length: slotCount }, (_, slotIndex) => `
-                                            <button
-                                                type="button"
-                                                class="port ${FlowGraph.PACKET_KIND_COLORS[kind] || 'port-kind-default'}"
-                                                data-port-side="output"
-                                                data-ref="input.${escapeHtml(binding)}"
-                                                data-port-name="${escapeHtml(binding)}"
-                                                data-socket-index="${slotIndex}"
-                                                data-kind="${escapeHtml(kind)}"
-                                                title="${escapeHtml(binding)}"
-                                            ></button>
-                                        `).join('')}
-                                    </div>
-                                    <div class="port-controls">
-                                        <button type="button" data-slot-control="add-system-output" data-binding="${escapeHtml(binding)}">+</button>
-                                        <button type="button" data-slot-control="remove-system-output" data-binding="${escapeHtml(binding)}">-</button>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                </div>
-            </article>
-        `;
+        return '';
     }
 
     function renderSystemOutputBlock() {
@@ -764,7 +713,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 style="left:${position.x}px; top:${position.y}px;"
             >
                 <div class="block-header" data-drag-kind="system" data-system-kind="output">
-                    <span>Final Output</span>
+                    <span>Cadence Output</span>
                 </div>
                 <div class="block-body">
                     <div class="port-side port-side-left">
@@ -779,14 +728,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     data-binding="${escapeHtml(FINAL_OUTPUT_BINDING)}"
                                     data-port-name="${escapeHtml(FINAL_OUTPUT_BINDING)}"
                                     data-socket-index="0"
-                                    data-accept-kinds="*"
+                                    data-accept-kinds="estimate,candidate"
                                     title="${escapeHtml(FINAL_OUTPUT_BINDING)}"
                                 ></button>
                             </div>
                         </div>
                     </div>
                     <div class="block-content system-block-content">
-                        <p>Executable result binding</p>
+                        <p>Cadence RPM output</p>
                     </div>
                 </div>
             </article>
@@ -972,6 +921,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         blocksLayer.querySelectorAll('.port').forEach(port => {
             port.addEventListener('mousedown', (event) => {
                 event.stopPropagation();
+                if (port.classList.contains('is-connected')) {
+                    const desc = readSocketDescriptor(port);
+                    if (desc.side === 'output') removeExistingConnectionForOutputSocket(desc.ref, desc.socketIndex);
+                    else removeExistingConnectionForInputSocket(desc.ref, desc.socketIndex);
+                    persistGraph();
+                    render();
+                    return;
+                }
                 startPendingConnection(port, 'drag');
             });
 
@@ -989,6 +946,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 event.stopPropagation();
 
                 if (suppressSocketClick) {
+                    return;
+                }
+
+                if (port.classList.contains('is-connected')) {
                     return;
                 }
 
@@ -1172,6 +1133,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 diagnosticsNode.textContent = JSON.stringify({ error: error.message }, null, 2);
             } finally {
                 uploadButton.disabled = false;
+            }
+        });
+    }
+
+    if (globalThis.FlowPanelDocks && typeof globalThis.FlowPanelDocks.bindPanelDocks === 'function') {
+        globalThis.FlowPanelDocks.bindPanelDocks({
+            sidebar: document.getElementById('dsp-sidebar'),
+            consolePane: document.getElementById('execution-console'),
+            sidebarDock: document.getElementById('sidebar-dock-btn'),
+            consoleDock: document.getElementById('console-dock-btn'),
+            updateWires() {
+                setTimeout(updateWires, 350);
             }
         });
     }
