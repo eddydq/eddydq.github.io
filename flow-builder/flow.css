@@ -24,8 +24,8 @@ html {
 }
 
 .flow-site-header {
-    width: min(calc(100% - 2rem), 1420px);
-    margin: 1rem auto 0;
+    width: 100%;
+    margin: 1rem 0 0;
 }
 
 .flow-toolbar {
@@ -94,17 +94,18 @@ html {
 .app-container {
     display: flex;
     height: calc(100vh - 6.2rem);
-    width: min(calc(100% - 2rem), 1440px);
-    margin: 1rem auto 0;
+    width: 100%;
+    margin: 1rem 0 0;
 }
 
 .sidebar {
     position: relative;
-    flex: 0 0 332px;
+    width: 332px;
+    flex: 0 0 auto;
     min-width: 0;
     z-index: 10;
     overflow: visible;
-    transition: flex-basis 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: width 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .sidebar-panel {
@@ -604,9 +605,9 @@ html {
 }
 
 .panel-dock-sidebar {
-    top: 1rem;
+    top: 0.75rem;
     left: 100%;
-    margin-left: 0.75rem;
+    margin-left: 0.7rem;
     padding: 0.8rem 0.5rem;
     writing-mode: vertical-rl;
     text-orientation: mixed;
@@ -620,7 +621,7 @@ html {
 }
 
 .sidebar.is-collapsed {
-    flex-basis: 0;
+    width: 0;
 }
 
 .sidebar.is-collapsed .sidebar-panel-content {
@@ -631,11 +632,6 @@ html {
 
 .sidebar.is-collapsed .sidebar-panel {
     border-right-width: 0;
-}
-
-.sidebar.is-collapsed .panel-dock-sidebar {
-    left: 0;
-    margin-left: 0;
 }
 
 .bottom-console.is-collapsed {
@@ -697,7 +693,7 @@ html {
     }
 
     .flow-site-header {
-        width: min(calc(100% - 1rem), 1420px);
+        width: 100%;
         margin-top: 0.5rem;
     }
 
@@ -719,7 +715,7 @@ html {
         height: auto;
         min-height: calc(100vh - 7rem);
         flex-direction: column;
-        width: min(calc(100% - 1rem), 1440px);
+        width: 100%;
         margin-top: 0.75rem;
     }
 
@@ -739,24 +735,17 @@ html {
     }
 
     .sidebar.is-collapsed {
-        flex-basis: 0;
+        height: 0;
     }
 
     .panel-dock-sidebar {
         top: 100%;
         left: auto;
-        right: 1rem;
+        right: 0.75rem;
         margin-top: 0.75rem;
         margin-left: 0;
         writing-mode: horizontal-tb;
         transform: none;
-    }
-
-    .sidebar.is-collapsed .panel-dock-sidebar {
-        top: 0.75rem;
-        left: 0;
-        right: auto;
-        margin-top: 0;
     }
 
     .panel-dock-console {
