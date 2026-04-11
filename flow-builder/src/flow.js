@@ -1047,7 +1047,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function updatePanels() {
         renderCadenceChart(
             replayResult ? replayResult.series : null,
-            replayError || 'Run the replay to see cadence over time.'
+            (replayResult && replayResult.emptySeriesReason) || replayError || 'Run the replay to see cadence over time.'
         );
 
         if (lastRunResult) {
@@ -1185,7 +1185,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             replayResult = result;
             lastRunResult = result.lastStepResult;
             updatePanels();
-            setReplayStatus(`Replay complete: ${result.series.length} cadence points`);
+            setReplayStatus(
+                result.series.length > 0
+                    ? `Replay complete: ${result.series.length} cadence points`
+                    : (result.emptySeriesReason || 'Replay complete: 0 cadence points')
+            );
             setStatus('flow-run-complete', 'Native pipeline complete');
         } catch (error) {
             lastRunResult = null;

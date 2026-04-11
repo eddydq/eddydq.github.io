@@ -82,6 +82,20 @@
         };
     }
 
+    function describeEmptySeries(result, finalBinding) {
+        const packet = result && result.outputs ? result.outputs[finalBinding] : null;
+
+        if (!packet) {
+            return `Final output "${finalBinding}" was not produced.`;
+        }
+
+        if (packet.kind !== 'estimate') {
+            return `Final output "${finalBinding}" must be estimate; got ${packet.kind}.`;
+        }
+
+        return `Final output "${finalBinding}" produced no cadence values.`;
+    }
+
     async function runReplaySession({ runtime, graph, frames, finalBinding }) {
         if (!runtime || typeof runtime.runGraph !== 'function') {
             throw new Error('replay runtime is unavailable');
@@ -117,6 +131,9 @@
         return {
             series,
             lastStepResult,
+            emptySeriesReason: series.length === 0
+                ? describeEmptySeries(lastStepResult, finalBinding)
+                : null,
             replayMeta: {
                 frameCount: frames.length,
                 sampleRateHz: DEFAULT_REPLAY_SAMPLE_RATE_HZ

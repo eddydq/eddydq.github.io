@@ -153,6 +153,43 @@ async function test_run_replay_session_reports_row_failures() {
     );
 }
 
+async function test_run_replay_session_explains_empty_series_when_final_output_is_not_estimate() {
+    const runtime = {
+        async runGraph() {
+            return {
+                outputs: {
+                    cadence: {
+                        kind: 'candidate',
+                        length: 2,
+                        values: [68, 80]
+                    }
+                },
+                diagnostics: { nodes: [{ node_id: 'ac', status: 'ok' }] }
+            };
+        }
+    };
+
+    const result = await runReplaySession({
+        runtime,
+        graph: {
+            schema_version: 2,
+            nodes: [
+                { node_id: 'src', block_id: 'source.polar', params: {} },
+                { node_id: 'ac', block_id: 'estimation.autocorrelation', params: { min_lag: 15, max_lag: 104, confidence_min: 0, harmonic_pct: 80 } }
+            ],
+            connections: [
+                { source: 'src.primary', source_socket: 0, target: 'ac.source', target_socket: 0 }
+            ],
+            outputs: { cadence: 'ac.primary' }
+        },
+        frames: [{ timestamp: 1000, count: 1, x: [1], y: [2], z: [3] }],
+        finalBinding: 'cadence'
+    });
+
+    assert.deepStrictEqual(result.series, []);
+    assert.equal(result.emptySeriesReason, 'Final output "cadence" must be estimate; got candidate.');
+}
+
 async function main() {
     test_parse_polar_csv_respects_count();
     test_build_replay_execution_graph_replaces_source_polar_with_input_raw();
@@ -160,6 +197,7 @@ async function main() {
     test_collect_cadence_point_reads_estimate_value_zero();
     await test_run_replay_session_executes_every_frame_and_collects_series();
     await test_run_replay_session_reports_row_failures();
+    await test_run_replay_session_explains_empty_series_when_final_output_is_not_estimate();
     console.log('flow replay tests passed');
 }
 
