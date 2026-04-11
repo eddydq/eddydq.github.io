@@ -82,11 +82,54 @@
         };
     }
 
+    async function runReplaySession({ runtime, graph, frames, finalBinding }) {
+        if (!runtime || typeof runtime.runGraph !== 'function') {
+            throw new Error('replay runtime is unavailable');
+        }
+
+        if (!Array.isArray(frames) || frames.length === 0) {
+            throw new Error('replay CSV contained no valid rows');
+        }
+
+        const replayGraph = buildReplayExecutionGraph(graph || {});
+        const series = [];
+        let lastStepResult = null;
+
+        for (let index = 0; index < frames.length; index += 1) {
+            const frame = frames[index];
+
+            try {
+                lastStepResult = await runtime.runGraph({
+                    graph: replayGraph,
+                    inputs: [createReplayPacket(frame)]
+                });
+            } catch (error) {
+                const message = error && error.message ? error.message : 'replay execution failed';
+                throw new Error(`replay row ${index} at ${frame.timestamp} failed: ${message}`);
+            }
+
+            const point = collectCadencePoint(frame.timestamp, lastStepResult, finalBinding);
+            if (point) {
+                series.push(point);
+            }
+        }
+
+        return {
+            series,
+            lastStepResult,
+            replayMeta: {
+                frameCount: frames.length,
+                sampleRateHz: DEFAULT_REPLAY_SAMPLE_RATE_HZ
+            }
+        };
+    }
+
     return {
         DEFAULT_REPLAY_SAMPLE_RATE_HZ,
         parsePolarReplayCsv,
         buildReplayExecutionGraph,
         createReplayPacket,
-        collectCadencePoint
+        collectCadencePoint,
+        runReplaySession
     };
 }));
