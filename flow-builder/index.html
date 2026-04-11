@@ -76,8 +76,19 @@
                     <h3 data-i18n="graph-title">Execution Outputs</h3>
                 </div>
                 <div class="console-outputs" id="console-outputs-container">
-                    <pre id="graph-output-list" class="graph-output-list"></pre>
-                    <pre id="runtime-diagnostics" class="graph-output-list"></pre>
+                    <section class="cadence-chart-panel">
+                        <div class="console-subhead">
+                            <h4>Cadence Over Time</h4>
+                            <p id="replay-status" class="replay-status">Loading replay...</p>
+                        </div>
+                        <div id="cadence-chart" class="cadence-chart">
+                            <p class="cadence-chart-empty">Run the replay to see cadence over time.</p>
+                        </div>
+                    </section>
+                    <div class="console-json-panels">
+                        <pre id="graph-output-list" class="graph-output-list"></pre>
+                        <pre id="runtime-diagnostics" class="graph-output-list"></pre>
+                    </div>
                 </div>
             </section>
         </main>
@@ -92,6 +103,7 @@
     <script src="src/flow-ble-upload.js"></script>
     <script src="src/flow-builder-viewmodel.js"></script>
     <script src="src/panel-docks.js"></script>
+    <script src="src/flow-replay.js"></script>
     <script src="src/flow.js"></script>
 </body>
 </html>

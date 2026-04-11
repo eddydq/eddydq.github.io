@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const outputNode = document.getElementById('graph-output-list');
     const diagnosticsNode = document.getElementById('runtime-diagnostics');
     const statusNode = document.getElementById('catalog-status');
+    const chartNode = document.getElementById('cadence-chart');
+    const replayStatusNode = document.getElementById('replay-status');
     const runButton = document.getElementById('run-sim-btn');
     const uploadButton = document.getElementById('upload-pipeline-btn');
     const uploadProgress = document.getElementById('upload-progress');
@@ -23,8 +25,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     let pendingConnection = null;
     let dragState = null;
     let lastRunResult = null;
+    let replayFrames = [];
+    let replayError = null;
+    let replayResult = null;
     let suppressSocketClick = false;
     let canvasDropBound = false;
+    const DEFAULT_REPLAY_PATH = 'logs/raw_logs/polar_log_002.csv';
 
     function translate(key, fallback) {
         if (typeof translations !== 'undefined') {
@@ -43,6 +49,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     function setUploadStatus(message) {
         if (uploadStatus) {
             uploadStatus.textContent = message;
+        }
+    }
+
+    function setReplayStatus(message) {
+        if (replayStatusNode) {
+            replayStatusNode.textContent = message;
         }
     }
 
@@ -207,8 +219,71 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function markGraphDirty() {
         lastRunResult = null;
+        replayResult = null;
         persistGraph();
         render();
+    }
+
+    function renderCadenceChart(series, emptyMessage = 'Run the replay to see cadence over time.') {
+        if (!chartNode) {
+            return;
+        }
+
+        if (!Array.isArray(series) || series.length === 0) {
+            chartNode.innerHTML = `<p class="cadence-chart-empty">${escapeHtml(emptyMessage)}</p>`;
+            return;
+        }
+
+        const values = series.map(point => Number(point.cadence) || 0);
+        const minValue = Math.min(...values);
+        const maxValue = Math.max(...values);
+        const denominator = Math.max(1, maxValue - minValue);
+        const points = series.map((point, index) => {
+            const x = series.length === 1 ? 50 : (index / (series.length - 1)) * 100;
+            const normalized = (Number(point.cadence) - minValue) / denominator;
+            const y = maxValue === minValue ? 50 : 100 - (normalized * 100);
+            return `${x.toFixed(2)},${y.toFixed(2)}`;
+        }).join(' ');
+
+        chartNode.innerHTML = `
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Cadence over time chart">
+                <polyline
+                    fill="none"
+                    stroke="#7caec2"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    points="${points}"
+                ></polyline>
+            </svg>
+        `;
+    }
+
+    async function loadReplayFrames() {
+        setReplayStatus('Loading replay...');
+
+        try {
+            if (!globalThis.FlowReplay || typeof globalThis.FlowReplay.parsePolarReplayCsv !== 'function') {
+                throw new Error('Replay helpers are unavailable.');
+            }
+
+            const response = await globalThis.fetch(DEFAULT_REPLAY_PATH);
+            if (!response || response.ok === false) {
+                throw new Error('replay CSV fetch failed');
+            }
+
+            replayFrames = globalThis.FlowReplay.parsePolarReplayCsv(await response.text());
+            if (replayFrames.length === 0) {
+                throw new Error('replay CSV contained no valid rows');
+            }
+
+            replayError = null;
+            setReplayStatus(`Replay ready: ${replayFrames.length} frames`);
+        } catch (error) {
+            replayFrames = [];
+            replayError = error && error.message ? error.message : 'Replay data unavailable.';
+            setReplayStatus(replayError);
+        }
     }
 
     function addNode(blockId, position) {
@@ -970,6 +1045,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function updatePanels() {
+        renderCadenceChart(
+            replayResult ? replayResult.series : null,
+            replayError || 'Run the replay to see cadence over time.'
+        );
+
         if (lastRunResult) {
             outputNode.textContent = JSON.stringify(lastRunResult.outputs, null, 2);
             diagnosticsNode.textContent = JSON.stringify(lastRunResult.diagnostics, null, 2);
@@ -1073,27 +1153,47 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (errors.length > 0) {
+            lastRunResult = null;
+            replayResult = null;
+            renderCadenceChart(null);
             setStatus('flow-run-invalid', 'Fix graph validation errors before running.');
             outputNode.textContent = '';
             diagnosticsNode.textContent = JSON.stringify({ errors }, null, 2);
             return;
         }
 
+        if (replayError || replayFrames.length === 0) {
+            lastRunResult = null;
+            replayResult = null;
+            renderCadenceChart(null, replayError || 'Replay data unavailable.');
+            diagnosticsNode.textContent = JSON.stringify({ error: replayError || 'Replay data unavailable.' }, null, 2);
+            setStatus('flow-run-error', 'Native runtime failed');
+            return;
+        }
+
         setStatus('flow-run-running', 'Running native pipeline...');
+        setReplayStatus(`Running replay over ${replayFrames.length} frames...`);
 
         try {
-            const result = await getRuntime().runGraph({
+            const result = await globalThis.FlowReplay.runReplaySession({
+                runtime: getRuntime(),
                 graph: FlowGraph.serializeGraph(graph),
-                inputs: buildDemoInputs()
+                frames: replayFrames,
+                finalBinding: FINAL_OUTPUT_BINDING
             });
 
-            lastRunResult = result;
+            replayResult = result;
+            lastRunResult = result.lastStepResult;
             updatePanels();
+            setReplayStatus(`Replay complete: ${result.series.length} cadence points`);
             setStatus('flow-run-complete', 'Native pipeline complete');
         } catch (error) {
             lastRunResult = null;
+            replayResult = null;
+            renderCadenceChart(null, error.message);
             outputNode.textContent = '';
             diagnosticsNode.textContent = JSON.stringify({ error: error.message }, null, 2);
+            setReplayStatus(error.message || 'Replay run failed.');
             setStatus('flow-run-error', 'Native runtime failed');
         }
     });
@@ -1148,6 +1248,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
+
+    await loadReplayFrames();
 
     try {
         catalog = await FlowCatalog.loadCatalog();

@@ -23,11 +23,14 @@ assertNoMergeMarkers(css, 'flow-builder/flow.css');
 assert.match(html, /<link rel="stylesheet" href="\.\.\/css\/styles\.css"/);
 assert.match(html, /<script src="\.\.\/js\/script\.js"><\/script>/);
 assert.match(html, /<script src="assets\/flow-block-catalog\.js"><\/script>/);
+assert.match(html, /<script src="src\/flow-replay\.js"><\/script>/);
 
 assert.match(html, /class="sidebar-panel"/);
 assert.match(html, /class="sidebar-panel-content"/);
 assert.match(html, /class="console-pane bottom-console"/);
 assert.doesNotMatch(html, /class="right-console"/);
+assert.match(html, /id="cadence-chart"/);
+assert.match(html, /id="replay-status"/);
 
 assert.match(css, /\.bottom-console\s*\{/);
 assert.match(css, /\.bottom-console\.is-collapsed\s*\{/);
