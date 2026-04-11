@@ -224,6 +224,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         render();
     }
 
+    function buildTickValues(minValue, maxValue, tickCount) {
+        if (!Number.isFinite(minValue) || !Number.isFinite(maxValue)) {
+            return [0];
+        }
+
+        if (tickCount <= 1 || maxValue <= minValue) {
+            return [minValue];
+        }
+
+        return Array.from({ length: tickCount }, (_, index) => (
+            minValue + (((maxValue - minValue) * index) / (tickCount - 1))
+        ));
+    }
+
+    function formatElapsedSeconds(seconds) {
+        return `${seconds.toFixed(1)}s`;
+    }
+
+    function formatCadenceTick(value) {
+        return `${Math.round(value)}`;
+    }
+
+    function buildChartSeries(series) {
+        const rawSeries = Array.isArray(series) ? series : [];
+        const firstTimestamp = rawSeries.find(point => Number.isFinite(point && point.timestamp));
+        const baseline = firstTimestamp ? firstTimestamp.timestamp : Number.NaN;
+
+        return rawSeries.map((point, index) => ({
+            elapsedSeconds: Number.isFinite(point && point.timestamp) && Number.isFinite(baseline)
+                ? Math.max(0, (point.timestamp - baseline) / 1000)
+                : index,
+            cadence: Number(point && point.cadence) || 0
+        }));
+    }
+
     function renderCadenceChart(series, emptyMessage = 'Run the replay to see cadence over time.') {
         if (!chartNode) {
             return;
@@ -234,27 +269,84 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        const values = series.map(point => Number(point.cadence) || 0);
-        const minValue = Math.min(...values);
-        const maxValue = Math.max(...values);
-        const denominator = Math.max(1, maxValue - minValue);
-        const points = series.map((point, index) => {
-            const x = series.length === 1 ? 50 : (index / (series.length - 1)) * 100;
-            const normalized = (Number(point.cadence) - minValue) / denominator;
-            const y = maxValue === minValue ? 50 : 100 - (normalized * 100);
-            return `${x.toFixed(2)},${y.toFixed(2)}`;
-        }).join(' ');
+        const chartSeries = buildChartSeries(series);
+        const elapsedValues = chartSeries.map(point => point.elapsedSeconds);
+        const cadenceValues = chartSeries.map(point => point.cadence);
+        const xMin = 0;
+        const xMax = Math.max(...elapsedValues, 0);
+        const cadenceMin = Math.min(...cadenceValues);
+        const cadenceMax = Math.max(...cadenceValues);
+        const cadenceRange = cadenceMax - cadenceMin;
+        const cadencePadding = cadenceRange === 0
+            ? Math.max(5, Math.abs(cadenceMax) * 0.12 || 5)
+            : Math.max(3, cadenceRange * 0.12);
+        const yMin = Math.floor(cadenceMin - cadencePadding);
+        const yMax = Math.ceil(cadenceMax + cadencePadding);
+        const xTicks = buildTickValues(xMin, xMax, chartSeries.length > 2 ? 5 : Math.max(2, chartSeries.length));
+        const yTicks = buildTickValues(yMin, yMax, 4);
+        const viewBox = { width: 360, height: 188 };
+        const plot = {
+            left: 48,
+            right: 16,
+            top: 16,
+            bottom: 34
+        };
+        const plotWidth = viewBox.width - plot.left - plot.right;
+        const plotHeight = viewBox.height - plot.top - plot.bottom;
+
+        const scaleX = (elapsedSeconds) => (
+            plot.left + ((xMax <= 0 ? 0 : elapsedSeconds / xMax) * plotWidth)
+        );
+        const scaleY = (cadence) => (
+            plot.top + (yMax === yMin ? (plotHeight / 2) : ((yMax - cadence) / (yMax - yMin)) * plotHeight)
+        );
+
+        const polylinePoints = chartSeries
+            .map(point => `${scaleX(point.elapsedSeconds).toFixed(2)},${scaleY(point.cadence).toFixed(2)}`)
+            .join(' ');
+        const areaPoints = [
+            `${scaleX(chartSeries[0].elapsedSeconds).toFixed(2)},${(plot.top + plotHeight).toFixed(2)}`,
+            ...chartSeries.map(point => `${scaleX(point.elapsedSeconds).toFixed(2)},${scaleY(point.cadence).toFixed(2)}`),
+            `${scaleX(chartSeries[chartSeries.length - 1].elapsedSeconds).toFixed(2)},${(plot.top + plotHeight).toFixed(2)}`
+        ].join(' ');
+        const xGridLines = xTicks.map((tick, index) => {
+            const x = scaleX(tick);
+            return `
+                <line class="chart-grid" x1="${x.toFixed(2)}" y1="${plot.top}" x2="${x.toFixed(2)}" y2="${(plot.top + plotHeight).toFixed(2)}"></line>
+                <text class="chart-axis-label" x="${x.toFixed(2)}" y="${(viewBox.height - 10).toFixed(2)}" text-anchor="middle">${escapeHtml(formatElapsedSeconds(tick))}</text>
+                ${index === 0 || index === xTicks.length - 1 ? '' : ''}
+            `;
+        }).join('');
+        const yGridLines = yTicks.map(tick => {
+            const y = scaleY(tick);
+            return `
+                <line class="chart-grid" x1="${plot.left}" y1="${y.toFixed(2)}" x2="${(plot.left + plotWidth).toFixed(2)}" y2="${y.toFixed(2)}"></line>
+                <text class="chart-axis-label" x="${(plot.left - 8).toFixed(2)}" y="${(y + 3).toFixed(2)}" text-anchor="end">${escapeHtml(formatCadenceTick(tick))}</text>
+            `;
+        }).join('');
+        const pointMarkers = chartSeries.map(point => {
+            const x = scaleX(point.elapsedSeconds);
+            const y = scaleY(point.cadence);
+
+            return `
+                <circle class="chart-point" cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="3.2">
+                    <title>${escapeHtml(`${formatElapsedSeconds(point.elapsedSeconds)} | ${Math.round(point.cadence)} RPM`)}</title>
+                </circle>
+            `;
+        }).join('');
 
         chartNode.innerHTML = `
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Cadence over time chart">
-                <polyline
-                    fill="none"
-                    stroke="#7caec2"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    points="${points}"
-                ></polyline>
+            <svg viewBox="0 0 ${viewBox.width} ${viewBox.height}" preserveAspectRatio="none" role="img" aria-label="Cadence over time chart">
+                <rect class="chart-surface" x="${plot.left}" y="${plot.top}" width="${plotWidth}" height="${plotHeight}" rx="8" ry="8"></rect>
+                ${xGridLines}
+                ${yGridLines}
+                <line class="chart-axis" x1="${plot.left}" y1="${(plot.top + plotHeight).toFixed(2)}" x2="${(plot.left + plotWidth).toFixed(2)}" y2="${(plot.top + plotHeight).toFixed(2)}"></line>
+                <line class="chart-axis" x1="${plot.left}" y1="${plot.top}" x2="${plot.left}" y2="${(plot.top + plotHeight).toFixed(2)}"></line>
+                <polygon class="chart-fill" points="${areaPoints}"></polygon>
+                <polyline class="chart-line" points="${polylinePoints}"></polyline>
+                ${pointMarkers}
+                <text class="chart-axis-title" x="${(plot.left + (plotWidth / 2)).toFixed(2)}" y="${(viewBox.height - 2).toFixed(2)}" text-anchor="middle">Elapsed Time</text>
+                <text class="chart-axis-title" x="14" y="${(plot.top + (plotHeight / 2)).toFixed(2)}" text-anchor="middle" transform="rotate(-90 14 ${(plot.top + (plotHeight / 2)).toFixed(2)})">Cadence (RPM)</text>
             </svg>
         `;
     }

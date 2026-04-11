@@ -186,8 +186,8 @@ async function main() {
         fetch: async (url) => {
             const csv = [
                 'timestamp,count,x_000,y_000,z_000',
-                '1000,1,11,21,31',
-                '1020,1,12,22,32'
+                '2026-04-06T12:31:05.476,1,11,21,31',
+                '2026-04-06T12:31:06.476,1,12,22,32'
             ].join('\n');
 
             if (String(url).includes('polar_log_002.csv')) {
@@ -239,6 +239,11 @@ async function main() {
 
     assert.equal(replayCallCount, 2, 'replay run should execute once per CSV row');
     assert.match(elements.get('cadence-chart').innerHTML, /svg/i);
+    assert.match(elements.get('cadence-chart').innerHTML, /Elapsed Time/i);
+    assert.match(elements.get('cadence-chart').innerHTML, /Cadence \(RPM\)/i);
+    assert.match(elements.get('cadence-chart').innerHTML, /0\.0s/i);
+    assert.match(elements.get('cadence-chart').innerHTML, /1\.0s/i);
+    assert.match(elements.get('cadence-chart').innerHTML, /circle/i);
     assert.match(elements.get('graph-output-list').textContent, /"cadence"/);
     assert.match(elements.get('runtime-diagnostics').textContent, /"nodes"/);
 }

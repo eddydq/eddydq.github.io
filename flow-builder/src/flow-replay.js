@@ -9,6 +9,21 @@
 }(typeof globalThis !== 'undefined' ? globalThis : this, function() {
     const DEFAULT_REPLAY_SAMPLE_RATE_HZ = 52;
 
+    function parseReplayTimestamp(value) {
+        const raw = String(value ?? '').trim();
+        if (!raw) {
+            return Number.NaN;
+        }
+
+        const numeric = Number(raw);
+        if (Number.isFinite(numeric)) {
+            return numeric;
+        }
+
+        const parsed = Date.parse(raw);
+        return Number.isFinite(parsed) ? parsed : Number.NaN;
+    }
+
     function parsePolarReplayCsv(csvText) {
         const lines = String(csvText || '').trim().split(/\r?\n/).filter(Boolean);
         if (lines.length === 0) {
@@ -25,7 +40,7 @@
             const count = Number(cells[1] || 0);
 
             return {
-                timestamp: Number(cells[0] || 0),
+                timestamp: parseReplayTimestamp(cells[0]),
                 count,
                 x: cells.slice(xStart, xStart + count).map(Number),
                 y: cells.slice(yStart, yStart + count).map(Number),

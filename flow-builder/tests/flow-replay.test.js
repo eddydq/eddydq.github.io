@@ -27,6 +27,17 @@ function test_parse_polar_csv_respects_count() {
     ]);
 }
 
+function test_parse_polar_csv_parses_iso_timestamp_to_epoch_ms() {
+    const csv = [
+        'timestamp,count,x_000,y_000,z_000',
+        '2026-04-06T12:31:05.476,1,11,21,31'
+    ].join('\n');
+
+    const frames = parsePolarReplayCsv(csv);
+
+    assert.equal(frames[0].timestamp, Date.parse('2026-04-06T12:31:05.476'));
+}
+
 function test_build_replay_execution_graph_replaces_source_polar_with_input_raw() {
     const replayGraph = buildReplayExecutionGraph({
         schema_version: 2,
@@ -206,6 +217,7 @@ async function test_run_replay_session_collects_series_when_final_output_is_cand
 
 async function main() {
     test_parse_polar_csv_respects_count();
+    test_parse_polar_csv_parses_iso_timestamp_to_epoch_ms();
     test_build_replay_execution_graph_replaces_source_polar_with_input_raw();
     test_create_replay_packet_uses_52_hz_raw_window();
     test_collect_cadence_point_reads_estimate_value_zero();
