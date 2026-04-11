@@ -219,8 +219,8 @@ async function main() {
         ...context.FlowReplay,
         async runReplaySession() {
             return {
-                series: [],
-                emptySeriesReason: 'Final output "cadence" must be estimate; got candidate.',
+                series: [{ timestamp: 1000, cadence: 68 }],
+                emptySeriesReason: null,
                 lastStepResult: {
                     outputs: {
                         cadence: {
@@ -252,8 +252,8 @@ async function main() {
     await domContentLoadedHandlers[0]();
     await elements.get('run-sim-btn').dispatchEvent({ type: 'click' });
 
-    assert.match(elements.get('cadence-chart').innerHTML, /must be estimate; got candidate/i);
-    assert.match(elements.get('replay-status').textContent, /must be estimate; got candidate/i);
+    assert.match(elements.get('cadence-chart').innerHTML, /svg/i);
+    assert.match(elements.get('replay-status').textContent, /1 cadence points/i);
     assert.match(elements.get('graph-output-list').textContent, /"candidate"/);
 }
 

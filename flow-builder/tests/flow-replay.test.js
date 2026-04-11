@@ -84,6 +84,20 @@ function test_collect_cadence_point_reads_estimate_value_zero() {
     assert.deepStrictEqual(point, { timestamp: 1234, cadence: 74 });
 }
 
+function test_collect_cadence_point_reads_candidate_value_zero() {
+    const point = collectCadencePoint(1234, {
+        outputs: {
+            cadence: {
+                kind: 'candidate',
+                length: 2,
+                values: [61, 65]
+            }
+        }
+    }, 'cadence');
+
+    assert.deepStrictEqual(point, { timestamp: 1234, cadence: 61 });
+}
+
 async function test_run_replay_session_executes_every_frame_and_collects_series() {
     const calls = [];
     const runtime = {
@@ -153,7 +167,7 @@ async function test_run_replay_session_reports_row_failures() {
     );
 }
 
-async function test_run_replay_session_explains_empty_series_when_final_output_is_not_estimate() {
+async function test_run_replay_session_collects_series_when_final_output_is_candidate() {
     const runtime = {
         async runGraph() {
             return {
@@ -186,8 +200,8 @@ async function test_run_replay_session_explains_empty_series_when_final_output_i
         finalBinding: 'cadence'
     });
 
-    assert.deepStrictEqual(result.series, []);
-    assert.equal(result.emptySeriesReason, 'Final output "cadence" must be estimate; got candidate.');
+    assert.deepStrictEqual(result.series, [{ timestamp: 1000, cadence: 68 }]);
+    assert.equal(result.emptySeriesReason, null);
 }
 
 async function main() {
@@ -195,9 +209,10 @@ async function main() {
     test_build_replay_execution_graph_replaces_source_polar_with_input_raw();
     test_create_replay_packet_uses_52_hz_raw_window();
     test_collect_cadence_point_reads_estimate_value_zero();
+    test_collect_cadence_point_reads_candidate_value_zero();
     await test_run_replay_session_executes_every_frame_and_collects_series();
     await test_run_replay_session_reports_row_failures();
-    await test_run_replay_session_explains_empty_series_when_final_output_is_not_estimate();
+    await test_run_replay_session_collects_series_when_final_output_is_candidate();
     console.log('flow replay tests passed');
 }
 

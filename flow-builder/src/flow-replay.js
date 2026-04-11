@@ -72,7 +72,12 @@
 
     function collectCadencePoint(timestamp, result, finalBinding) {
         const packet = result && result.outputs ? result.outputs[finalBinding] : null;
-        if (!packet || packet.kind !== 'estimate' || !Array.isArray(packet.values) || packet.values.length < 1) {
+        if (
+            !packet ||
+            (packet.kind !== 'estimate' && packet.kind !== 'candidate') ||
+            !Array.isArray(packet.values) ||
+            packet.values.length < 1
+        ) {
             return null;
         }
 
@@ -89,8 +94,8 @@
             return `Final output "${finalBinding}" was not produced.`;
         }
 
-        if (packet.kind !== 'estimate') {
-            return `Final output "${finalBinding}" must be estimate; got ${packet.kind}.`;
+        if (packet.kind !== 'estimate' && packet.kind !== 'candidate') {
+            return `Final output "${finalBinding}" must be candidate or estimate; got ${packet.kind}.`;
         }
 
         return `Final output "${finalBinding}" produced no cadence values.`;
