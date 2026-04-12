@@ -153,6 +153,7 @@
         const state = normalizeGraph(graph);
 
         if (state.nodes.length > 0 || state.connections.length > 0) {
+            inspectManagedSourceGraph(state);
             return state;
         }
 
@@ -231,13 +232,36 @@
             sourceNode,
             axisNode,
             sourceBlockId: sourceNode.block_id,
+            selection: {
+                source: sourceNode.block_id,
+                sample_rate_hz: sourceNode.params && Object.prototype.hasOwnProperty.call(sourceNode.params, 'sample_rate_hz')
+                    ? sourceNode.params.sample_rate_hz
+                    : sourceConfig.defaults.sample_rate_hz,
+                resolution: sourceNode.params && Object.prototype.hasOwnProperty.call(sourceNode.params, 'resolution')
+                    ? sourceNode.params.resolution
+                    : sourceConfig.defaults.resolution,
+                axis: validateAxis(axisNode.params && axisNode.params.axis)
+            },
+            options: {
+                source: Object.keys(SOURCE_CONFIG),
+                sample_rate_hz: sourceConfig.sample_rate_hz.slice(),
+                resolution: sourceConfig.resolution.slice(),
+                axis: AXIS_OPTIONS.slice()
+            },
+            outputRef: `${axisNode.node_id}.primary`,
             axis: validateAxis(axisNode.params && axisNode.params.axis),
             hiddenNodeIds: [sourceNode.node_id, axisNode.node_id],
+            sourceRef: `${sourceNode.node_id}.primary`,
+            axisRef: `${axisNode.node_id}.source`,
             sourceConfig
         };
     }
 
     function resolveSourceBlockId(partialSelection, currentBlockId) {
+        if (partialSelection && typeof partialSelection.source === 'string') {
+            return partialSelection.source;
+        }
+
         if (partialSelection && typeof partialSelection.source_block_id === 'string') {
             return partialSelection.source_block_id;
         }

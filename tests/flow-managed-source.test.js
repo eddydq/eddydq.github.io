@@ -28,6 +28,40 @@ assert.equal(seededInspection.sourceBlockId, 'source.polar');
 assert.equal(seededInspection.axis, 'z');
 assert.equal(seededInspection.sourceNode.params.sample_rate_hz, 52);
 assert.equal(seededInspection.sourceNode.params.resolution, 16);
+assert.deepStrictEqual(seededInspection.selection, {
+    source: 'source.polar',
+    sample_rate_hz: 52,
+    resolution: 16,
+    axis: 'z'
+});
+assert.deepStrictEqual(seededInspection.options, {
+    source: ['source.lis3dh', 'source.mpu6050', 'source.polar'],
+    sample_rate_hz: [52],
+    resolution: [16],
+    axis: ['x', 'y', 'z']
+});
+assert.equal(seededInspection.outputRef, `${seededInspection.axisNode.node_id}.primary`);
+
+assert.throws(
+    () => ensureManagedSourceGraph(createGraphState({
+        nodes: [
+            {
+                node_id: 'source-a',
+                block_id: 'source.lis3dh',
+                params: { sample_rate_hz: 100, resolution: 12 }
+            },
+            {
+                node_id: 'magnitude',
+                block_id: 'representation.vector_magnitude',
+                params: {}
+            }
+        ],
+        connections: [
+            { source: 'source-a.primary', target: 'magnitude.source' }
+        ]
+    })),
+    /representation\.select_axis/i
+);
 
 const switchedGraph = applyManagedSourceSelection(seededGraph, {
     source_block_id: 'source.lis3dh',
@@ -40,6 +74,15 @@ assert.equal(switchedInspection.sourceBlockId, 'source.lis3dh');
 assert.equal(switchedInspection.sourceNode.params.sample_rate_hz, 100);
 assert.equal(switchedInspection.sourceNode.params.resolution, 12);
 assert.equal(switchedInspection.axis, 'z');
+
+const visibleSourceGraph = applyManagedSourceSelection(seededGraph, {
+    source: 'source.lis3dh'
+});
+const visibleSourceInspection = inspectManagedSourceGraph(visibleSourceGraph);
+
+assert.equal(visibleSourceInspection.sourceBlockId, 'source.lis3dh');
+assert.equal(visibleSourceInspection.sourceNode.params.sample_rate_hz, 100);
+assert.equal(visibleSourceInspection.sourceNode.params.resolution, 12);
 
 const preservedAxisGraph = ensureManagedSourceGraph(createGraphState({
     nodes: [
