@@ -230,8 +230,11 @@
 
     function createBuilderViewModel({ catalog, graph, selection }) {
         const managedSourceApi = getManagedSourceApi();
+        const managedSourceGraph = managedSourceApi && typeof managedSourceApi.ensureManagedSourceGraph === 'function'
+            ? managedSourceApi.ensureManagedSourceGraph(graph)
+            : graph;
         const managedSourceInspection = managedSourceApi && typeof managedSourceApi.inspectManagedSourceGraph === 'function'
-            ? managedSourceApi.inspectManagedSourceGraph(graph)
+            ? managedSourceApi.inspectManagedSourceGraph(managedSourceGraph)
             : null;
         const hiddenPaletteBlockIds = managedSourceApi && typeof managedSourceApi.getHiddenPaletteBlockIds === 'function'
             ? new Set(managedSourceApi.getHiddenPaletteBlockIds())
@@ -244,7 +247,7 @@
             }))
             .filter(group => group.blocks.length > 0);
         const blockById = getBlockById(catalog);
-        const graphNodes = Array.isArray(graph && graph.nodes) ? graph.nodes : [];
+        const graphNodes = Array.isArray(managedSourceGraph && managedSourceGraph.nodes) ? managedSourceGraph.nodes : [];
         const hiddenNodeIds = new Set(
             managedSourceInspection && Array.isArray(managedSourceInspection.hiddenNodeIds)
                 ? managedSourceInspection.hiddenNodeIds
@@ -258,8 +261,8 @@
             graphNodes
         };
         const activeKind = activeSourcePort ? findActiveOutputKind(activeCatalog, activeSourcePort) : null;
-        const sourceConnections = indexConnectionsBySocket(graph && graph.connections, 'source', 'source_socket');
-        const targetConnections = indexConnectionsBySocket(graph && graph.connections, 'target', 'target_socket');
+        const sourceConnections = indexConnectionsBySocket(managedSourceGraph && managedSourceGraph.connections, 'source', 'source_socket');
+        const targetConnections = indexConnectionsBySocket(managedSourceGraph && managedSourceGraph.connections, 'target', 'target_socket');
 
         const nodeCards = graphNodes
             .filter(node => !hiddenNodeIds.has(node.node_id))

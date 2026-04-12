@@ -108,3 +108,19 @@ assert.equal(model.nodeCards[2].inputPorts[0].slots.length, 3);
 assert.equal(model.nodeCards[2].inputPorts[0].slots[2].isConnected, true);
 assert.equal(model.nodeCards[2].inputPorts[0].canAddSlot, true);
 assert.equal(model.nodeCards[2].outputPorts[0].slots.length, 2);
+
+const emptyGraphModel = createBuilderViewModel({
+    catalog,
+    graph: {},
+    selection: {}
+});
+
+assert.deepStrictEqual(emptyGraphModel.paletteGroups.map(group => group.group), ['pretraitement', 'estimation', 'validation']);
+assert.deepStrictEqual(emptyGraphModel.nodeCards, []);
+assert.equal(emptyGraphModel.systemSourceCard.title, 'Source');
+assert.equal(emptyGraphModel.systemSourceCard.output.ref, 'managed-axis.primary');
+assert.equal(emptyGraphModel.systemSourceCard.output.kind, 'series');
+assert.deepStrictEqual(
+    emptyGraphModel.systemSourceCard.fields.find(field => field.name === 'sample_rate_hz').options,
+    [52]
+);
