@@ -5,6 +5,7 @@ const {
     ensureManagedSourceGraph,
     inspectManagedSourceGraph,
     applyManagedSourceSelection,
+    resetManagedSourceGraph,
     getHiddenPaletteBlockIds
 } = require('../flow-builder/src/flow-managed-source.js');
 
@@ -146,5 +147,73 @@ assert.throws(
     })),
     /exactly one source/i
 );
+
+const resetGraph = resetManagedSourceGraph(createGraphState({
+    nodes: [
+        {
+            node_id: 'source-a',
+            block_id: 'source.lis3dh',
+            params: { sample_rate_hz: 100, resolution: 12 }
+        },
+        {
+            node_id: 'source-b',
+            block_id: 'source.polar',
+            params: { sample_rate_hz: 52, resolution: 16 }
+        },
+        {
+            node_id: 'axis',
+            block_id: 'representation.select_axis',
+            params: { axis: 'y' }
+        },
+        {
+            node_id: 'magnitude',
+            block_id: 'representation.vector_magnitude',
+            params: {}
+        },
+        {
+            node_id: 'hpf',
+            block_id: 'pretraitement.hpf_gravity',
+            params: { cutoff_hz: 1 }
+        },
+        {
+            node_id: 'auto',
+            block_id: 'estimation.autocorrelation',
+            params: {}
+        }
+    ],
+    connections: [
+        { source: 'source-a.primary', target: 'axis.source' },
+        { source: 'source-b.primary', target: 'magnitude.source' },
+        { source: 'axis.primary', source_socket: 0, target: 'hpf.source', target_socket: 0 },
+        { source: 'magnitude.primary', source_socket: 0, target: 'auto.source', target_socket: 0 }
+    ],
+    outputs: {
+        cadence: 'axis.primary'
+    }
+}));
+const resetInspection = inspectManagedSourceGraph(resetGraph);
+
+assert.equal(resetInspection.sourceBlockId, 'source.polar');
+assert.equal(resetInspection.axis, 'z');
+assert.deepStrictEqual(
+    resetGraph.nodes.map(node => node.block_id),
+    [
+        'source.polar',
+        'representation.select_axis',
+        'pretraitement.hpf_gravity',
+        'estimation.autocorrelation'
+    ]
+);
+assert.deepStrictEqual(
+    resetGraph.connections,
+    [
+        { source: 'managed-source.primary', target: 'managed-axis.source' },
+        { source: 'managed-axis.primary', source_socket: 0, target: 'hpf.source', target_socket: 0 },
+        { source: 'managed-axis.primary', source_socket: 1, target: 'auto.source', target_socket: 0 }
+    ]
+);
+assert.deepStrictEqual(resetGraph.outputs, {
+    cadence: 'managed-axis.primary'
+});
 
 console.log('managed source helper tests passed');

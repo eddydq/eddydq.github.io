@@ -131,6 +131,7 @@ function createTestDocument() {
         ['upload-progress', createElement('upload-progress')],
         ['upload-status', createElement('upload-status')],
         ['canvas', createElement('canvas')],
+        ['canvas-transform-layer', createElement('canvas-transform-layer')],
         ['dsp-sidebar', createElement('dsp-sidebar')],
         ['execution-console', createElement('execution-console')],
         ['sidebar-dock-btn', createElement('sidebar-dock-btn')],

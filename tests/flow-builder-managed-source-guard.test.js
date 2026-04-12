@@ -59,6 +59,47 @@ function createClassList() {
 function createElement(id = '') {
     const listeners = new Map();
     const attributes = new Map();
+    let innerHtmlValue = '';
+    let managedSourceResetButtons = [];
+
+    function createVirtualElement(initialAttributes = {}) {
+        const childListeners = new Map();
+        const childAttributes = new Map(Object.entries(initialAttributes));
+
+        return {
+            dataset: {},
+            style: {},
+            disabled: false,
+            classList: createClassList(),
+            addEventListener(type, handler) {
+                if (!childListeners.has(type)) {
+                    childListeners.set(type, []);
+                }
+
+                childListeners.get(type).push(handler);
+            },
+            async dispatchEvent(event) {
+                for (const handler of childListeners.get(event.type) || []) {
+                    await handler(event);
+                }
+            },
+            querySelector() {
+                return null;
+            },
+            querySelectorAll() {
+                return [];
+            },
+            closest() {
+                return null;
+            },
+            setAttribute(name, value) {
+                childAttributes.set(name, value);
+            },
+            getAttribute(name) {
+                return childAttributes.has(name) ? childAttributes.get(name) : null;
+            }
+        };
+    }
 
     return {
         id,
@@ -66,13 +107,21 @@ function createElement(id = '') {
         style: {},
         value: 0,
         disabled: false,
-        innerHTML: '',
         textContent: '',
         clientWidth: 1280,
         clientHeight: 720,
         offsetWidth: 260,
         offsetHeight: 180,
         classList: createClassList(),
+        get innerHTML() {
+            return innerHtmlValue;
+        },
+        set innerHTML(value) {
+            innerHtmlValue = value;
+            managedSourceResetButtons = String(value).includes('data-managed-source-reset')
+                ? [createVirtualElement({ 'data-managed-source-reset': '' })]
+                : [];
+        },
         addEventListener(type, handler) {
             if (!listeners.has(type)) {
                 listeners.set(type, []);
@@ -88,7 +137,11 @@ function createElement(id = '') {
         querySelector() {
             return null;
         },
-        querySelectorAll() {
+        querySelectorAll(selector) {
+            if (selector === '[data-managed-source-reset]') {
+                return managedSourceResetButtons.slice();
+            }
+
             return [];
         },
         closest() {
@@ -126,6 +179,7 @@ function createTestDocument() {
         ['upload-progress', createElement('upload-progress')],
         ['upload-status', createElement('upload-status')],
         ['canvas', createElement('canvas')],
+        ['canvas-transform-layer', createElement('canvas-transform-layer')],
         ['dsp-sidebar', createElement('dsp-sidebar')],
         ['execution-console', createElement('execution-console')],
         ['sidebar-dock-btn', createElement('sidebar-dock-btn')],
@@ -208,6 +262,17 @@ async function main() {
     assert.match(elements.get('runtime-diagnostics').textContent, /exactly one source/i);
     assert.equal(elements.get('run-sim-btn').disabled, true);
     assert.equal(elements.get('upload-pipeline-btn').disabled, true);
+
+    const resetButton = elements.get('blocks-layer').querySelectorAll('[data-managed-source-reset]')[0];
+    assert.ok(resetButton, 'managed source error block should expose a reset button');
+
+    await resetButton.dispatchEvent({ type: 'click' });
+
+    assert.doesNotMatch(elements.get('blocks-layer').innerHTML, /Managed source graph/i);
+    assert.match(elements.get('blocks-layer').innerHTML, /data-system-source-select="sample_rate_hz"/);
+    assert.match(elements.get('palette-groups').innerHTML, /pretraitement/i);
+    assert.equal(elements.get('run-sim-btn').disabled, false);
+    assert.equal(elements.get('upload-pipeline-btn').disabled, false);
 }
 
 main().catch(error => {

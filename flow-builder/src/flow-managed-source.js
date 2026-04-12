@@ -115,6 +115,14 @@
         return Object.prototype.hasOwnProperty.call(SOURCE_CONFIG, blockId);
     }
 
+    function isManagedRepresentationBlock(blockId) {
+        return blockId === 'representation.select_axis' || blockId === 'representation.vector_magnitude';
+    }
+
+    function isManagedResetBlock(blockId) {
+        return isManagedSourceBlock(blockId) || isManagedRepresentationBlock(blockId);
+    }
+
     function getSourceNodes(graph) {
         return graph.nodes.filter(node => isManagedSourceBlock(node && node.block_id));
     }
@@ -149,15 +157,8 @@
         return allowedValues.includes(value) ? value : fallback;
     }
 
-    function buildSeededGraph(graph) {
-        const state = normalizeGraph(graph);
-
-        if (state.nodes.length > 0 || state.connections.length > 0) {
-            inspectManagedSourceGraph(state);
-            return state;
-        }
-
-        const sourceNode = {
+    function createDefaultSourceNode() {
+        return {
             node_id: 'managed-source',
             block_id: 'source.polar',
             params: {
@@ -166,12 +167,27 @@
             },
             ui: { hidden: true }
         };
-        const axisNode = {
+    }
+
+    function createDefaultAxisNode() {
+        return {
             node_id: 'managed-axis',
             block_id: 'representation.select_axis',
             params: { axis: 'z' },
             ui: { hidden: true }
         };
+    }
+
+    function buildSeededGraph(graph) {
+        const state = normalizeGraph(graph);
+
+        if (state.nodes.length > 0 || state.connections.length > 0) {
+            inspectManagedSourceGraph(state);
+            return state;
+        }
+
+        const sourceNode = createDefaultSourceNode();
+        const axisNode = createDefaultAxisNode();
 
         return createGraphState({
             ...state,
@@ -349,6 +365,105 @@
         return nextState;
     }
 
+    function resetManagedSourceGraph(graph) {
+        const state = normalizeGraph(graph);
+        const strippedNodeIds = new Set(
+            state.nodes
+                .filter(node => node && isManagedResetBlock(node.block_id))
+                .map(node => node.node_id)
+        );
+        const seriesProducerNodeIds = new Set(
+            state.nodes
+                .filter(node => node && isManagedRepresentationBlock(node.block_id))
+                .map(node => node.node_id)
+        );
+        const preservedNodes = state.nodes.filter(node => !strippedNodeIds.has(node.node_id));
+        const preservedConnections = [];
+        const remappedConnections = [];
+        const remappedConnectionKeys = new Set();
+
+        for (const connection of state.connections) {
+            const source = splitRef(connection.source);
+            const target = splitRef(connection.target);
+            const sourceStripped = strippedNodeIds.has(source.node_id);
+            const targetStripped = strippedNodeIds.has(target.node_id);
+
+            if (!sourceStripped && !targetStripped) {
+                preservedConnections.push(cloneValue(connection));
+                continue;
+            }
+
+            if (!seriesProducerNodeIds.has(source.node_id) || targetStripped) {
+                continue;
+            }
+
+            const targetSocket = Number.isInteger(connection.target_socket) ? connection.target_socket : 0;
+            const dedupeKey = `${connection.target}|${targetSocket}`;
+
+            if (remappedConnectionKeys.has(dedupeKey)) {
+                continue;
+            }
+
+            remappedConnectionKeys.add(dedupeKey);
+            remappedConnections.push({
+                ...cloneValue(connection),
+                source: 'managed-axis.primary',
+                source_socket: remappedConnections.length
+            });
+        }
+
+        const nextOutputs = cloneValue(state.outputs || {});
+        for (const [binding, sourceRef] of Object.entries(nextOutputs)) {
+            const source = splitRef(sourceRef);
+
+            if (!strippedNodeIds.has(source.node_id)) {
+                continue;
+            }
+
+            if (seriesProducerNodeIds.has(source.node_id)) {
+                nextOutputs[binding] = 'managed-axis.primary';
+                continue;
+            }
+
+            delete nextOutputs[binding];
+        }
+
+        const nextUi = cloneValue(state.ui || {});
+        if (nextUi.output_bindings && typeof nextUi.output_bindings === 'object') {
+            for (const [binding, meta] of Object.entries(nextUi.output_bindings)) {
+                const sourceRef = nextOutputs[binding];
+
+                if (sourceRef === 'managed-axis.primary') {
+                    nextUi.output_bindings[binding] = {
+                        ...(meta && typeof meta === 'object' ? meta : {}),
+                        source_socket: 0
+                    };
+                    continue;
+                }
+
+                if (!Object.prototype.hasOwnProperty.call(nextOutputs, binding)) {
+                    delete nextUi.output_bindings[binding];
+                }
+            }
+        }
+
+        const sourceNode = createDefaultSourceNode();
+        const axisNode = createDefaultAxisNode();
+
+        return createGraphState({
+            ...state,
+            nodes: [sourceNode, axisNode].concat(preservedNodes),
+            connections: [
+                {
+                    source: `${sourceNode.node_id}.primary`,
+                    target: `${axisNode.node_id}.source`
+                }
+            ].concat(preservedConnections, remappedConnections),
+            outputs: nextOutputs,
+            ui: nextUi
+        });
+    }
+
     function getHiddenPaletteBlockIds() {
         return HIDDEN_PALETTE_BLOCK_IDS.slice();
     }
@@ -359,6 +474,7 @@
         ensureManagedSourceGraph,
         inspectManagedSourceGraph,
         applyManagedSourceSelection,
+        resetManagedSourceGraph,
         getHiddenPaletteBlockIds
     };
 }));

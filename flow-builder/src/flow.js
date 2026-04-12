@@ -14,8 +14,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const uploadProgress = document.getElementById('upload-progress');
     const uploadStatus = document.getElementById('upload-status');
     const canvas = document.getElementById('canvas');
+    const canvasTransformLayer = document.getElementById('canvas-transform-layer');
 
-    if (!paletteRoot || !blocksLayer || !wiresLayer || !outputNode || !diagnosticsNode || !statusNode || !runButton || !canvas) {
+    if (!paletteRoot || !blocksLayer || !wiresLayer || !outputNode || !diagnosticsNode || !statusNode || !runButton || !canvas || !canvasTransformLayer) {
         return;
     }
 
@@ -26,6 +27,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     let runtime = null;
     let pendingConnection = null;
     let dragState = null;
+    let panState = null;
+    let canvasTransform = { x: 0, y: 0, scale: 1 };
     let lastRunResult = null;
     let replayFrames = [];
     let replayError = null;
@@ -33,6 +36,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     let suppressSocketClick = false;
     let canvasDropBound = false;
     const DEFAULT_REPLAY_PATH = 'logs/raw_logs/polar_log_002.csv';
+
+    function applyCanvasTransform() {
+        if (!canvasTransformLayer) return;
+        canvasTransformLayer.style.transform = `translate(${canvasTransform.x}px, ${canvasTransform.y}px) scale(${canvasTransform.scale})`;
+        canvas.style.backgroundPosition = `${canvasTransform.x}px ${canvasTransform.y}px`;
+        canvas.style.backgroundSize = `${24 * canvasTransform.scale}px ${24 * canvasTransform.scale}px`;
+    }
 
     function translate(key, fallback) {
         if (typeof translations !== 'undefined') {
@@ -186,14 +196,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function clampPosition(position, dimensions = {}) {
-        const bounds = getCanvasBounds();
-        const width = Number.isFinite(dimensions.width) ? dimensions.width : 260;
-        const height = Number.isFinite(dimensions.height) ? dimensions.height : 180;
-        const padding = 24;
-
+        // Removed bounds checking to allow free panning in any direction
         return {
-            x: Math.min(Math.max(position.x, padding), Math.max(padding, bounds.width - width - padding)),
-            y: Math.min(Math.max(position.y, padding), Math.max(padding, bounds.height - height - padding))
+            x: position.x,
+            y: position.y
         };
     }
 
@@ -583,8 +589,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const layerRect = wiresLayer.getBoundingClientRect();
 
         return {
-            x: rect.left + (rect.width / 2) - layerRect.left,
-            y: rect.top + (rect.height / 2) - layerRect.top
+            x: (rect.left + (rect.width / 2) - layerRect.left) / canvasTransform.scale,
+            y: (rect.top + (rect.height / 2) - layerRect.top) / canvasTransform.scale
         };
     }
 
@@ -723,15 +729,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const p1OutX = startIsLeftOut ? p1.x - 40 : p1.x + 40;
         const p2OutX = endIsLeftIn ? p2.x - 40 : p2.x + 40;
 
-        let wrapYOffset = 0;
-        if (options.sourceElement) {
-            const block = options.sourceElement.closest('.canvas-block');
+        let wrapYDistance = 40;
+        [options.sourceElement, options.targetElement].forEach(el => {
+            if (!el) return;
+            const block = el.closest('.canvas-block');
             if (block) {
-                const blockTop = parseInt(block.style.top) || p1.y;
-                wrapYOffset = (blockTop + block.offsetHeight + 24) - p1.y;
+                const blockTop = parseInt(block.style.top) || 0;
+                const bottomOffset = (blockTop + block.offsetHeight + 24) - p1.y;
+                if (bottomOffset > wrapYDistance) {
+                    wrapYDistance = bottomOffset;
+                }
             }
-        }
-        const wrapDistance = Math.max(wrapYOffset, 40);
+        });
 
         if (!startIsLeftOut && endIsLeftIn && p1OutX <= p2OutX) {
             const midX = (p1OutX + p2OutX) / 2;
@@ -992,6 +1001,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="port-side port-side-left"></div>
                     <div class="block-content system-block-content system-source-content">
                         <p>${escapeHtml(`Managed source graph is incompatible: ${errorMessage}`)}</p>
+                        <button type="button" class="palette-block" data-managed-source-reset="true">Reset Source</button>
                     </div>
                     <div class="port-side port-side-right"></div>
                 </div>
@@ -1140,12 +1150,48 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
 
-                const rect = blocksLayer.getBoundingClientRect();
+                const rect = canvas.getBoundingClientRect();
+                const dropX = event.clientX - rect.left;
+                const dropY = event.clientY - rect.top;
+
                 addNode(blockId, {
-                    x: event.clientX - rect.left - 110,
-                    y: event.clientY - rect.top - 60
+                    x: (dropX - canvasTransform.x) / canvasTransform.scale - 110,
+                    y: (dropY - canvasTransform.y) / canvasTransform.scale - 60
                 });
             });
+
+            canvas.addEventListener('mousedown', (event) => {
+                if (event.button === 1 || event.target === canvas || event.target === canvasTransformLayer) {
+                    event.preventDefault();
+                    panState = {
+                        startX: event.clientX,
+                        startY: event.clientY,
+                        initialX: canvasTransform.x,
+                        initialY: canvasTransform.y
+                    };
+                    canvas.style.cursor = 'grabbing';
+                }
+            });
+
+            canvas.addEventListener('wheel', (event) => {
+                event.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const pointerX = event.clientX - rect.left;
+                const pointerY = event.clientY - rect.top;
+
+                const logicalX = (pointerX - canvasTransform.x) / canvasTransform.scale;
+                const logicalY = (pointerY - canvasTransform.y) / canvasTransform.scale;
+
+                const zoomSensitivity = 0.002;
+                let delta = -event.deltaY * zoomSensitivity;
+                let newScale = Math.max(0.2, Math.min(3, canvasTransform.scale * (1 + delta)));
+
+                canvasTransform.scale = newScale;
+                canvasTransform.x = pointerX - logicalX * canvasTransform.scale;
+                canvasTransform.y = pointerY - logicalY * canvasTransform.scale;
+
+                applyCanvasTransform();
+            }, { passive: false });
 
             canvasDropBound = true;
         }
@@ -1210,6 +1256,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 graph = managedSourceApi.applyManagedSourceSelection(graph, {
                     [fieldName]: nextValue
                 });
+                markGraphDirty();
+            });
+        });
+
+        blocksLayer.querySelectorAll('[data-managed-source-reset]').forEach(button => {
+            button.addEventListener('click', () => {
+                if (!managedSourceApi || typeof managedSourceApi.resetManagedSourceGraph !== 'function') {
+                    graph = FlowGraph.createGraphState({});
+                } else {
+                    graph = managedSourceApi.resetManagedSourceGraph(graph);
+                }
+
+                pendingConnection = null;
                 markGraphDirty();
             });
         });
@@ -1358,14 +1417,56 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     document.addEventListener('mousemove', (event) => {
+        if (panState) {
+            canvasTransform.x = panState.initialX + (event.clientX - panState.startX);
+            canvasTransform.y = panState.initialY + (event.clientY - panState.startY);
+            applyCanvasTransform();
+            return;
+        }
+
         if (dragState) {
-            const nextPosition = clampPosition({
-                x: dragState.initialLeft + (event.clientX - dragState.startX),
-                y: dragState.initialTop + (event.clientY - dragState.startY)
+            let nextPosition = clampPosition({
+                x: dragState.initialLeft + (event.clientX - dragState.startX) / canvasTransform.scale,
+                y: dragState.initialTop + (event.clientY - dragState.startY) / canvasTransform.scale
             }, {
                 width: dragState.width,
                 height: dragState.height
             });
+
+            const PADDING = 64;
+            const otherBlocks = Array.from(blocksLayer.querySelectorAll('.canvas-block'))
+                .filter(b => b !== dragState.element)
+                .map(b => ({
+                    left: parseFloat(b.style.left || 0) - PADDING,
+                    right: parseFloat(b.style.left || 0) + b.offsetWidth + PADDING,
+                    top: parseFloat(b.style.top || 0) - PADDING,
+                    bottom: parseFloat(b.style.top || 0) + b.offsetHeight + PADDING
+                }));
+
+            const checkCollision = (x, y) => {
+                const right = x + dragState.width;
+                const bottom = y + dragState.height;
+                return otherBlocks.some(b => x < b.right && right > b.left && y < b.bottom && bottom > b.top);
+            };
+
+            let nextX = nextPosition.x;
+            let nextY = nextPosition.y;
+            const currentX = parseFloat(dragState.element.style.left || 0);
+            const currentY = parseFloat(dragState.element.style.top || 0);
+
+            if (checkCollision(nextX, nextY)) {
+                if (!checkCollision(nextX, currentY)) {
+                    nextY = currentY;
+                } else if (!checkCollision(currentX, nextY)) {
+                    nextX = currentX;
+                } else {
+                    nextX = currentX;
+                    nextY = currentY;
+                }
+            }
+
+            nextPosition.x = nextX;
+            nextPosition.y = nextY;
 
             dragState.element.style.left = `${nextPosition.x}px`;
             dragState.element.style.top = `${nextPosition.y}px`;
@@ -1391,8 +1492,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const layerRect = wiresLayer.getBoundingClientRect();
 
             pendingConnection.currentPos = {
-                x: event.clientX - layerRect.left,
-                y: event.clientY - layerRect.top
+                x: (event.clientX - layerRect.left) / canvasTransform.scale,
+                y: (event.clientY - layerRect.top) / canvasTransform.scale
             };
 
             updateWires();
@@ -1400,6 +1501,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     document.addEventListener('mouseup', () => {
+        if (panState) {
+            panState = null;
+            canvas.style.cursor = '';
+            return;
+        }
+
         if (dragState) {
             dragState.element.classList.remove('active');
             dragState = null;
