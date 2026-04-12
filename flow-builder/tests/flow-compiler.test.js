@@ -151,9 +151,57 @@ function test_compile_rejects_graphs_over_firmware_edge_capacity() {
     console.log('  PASS: test_compile_rejects_graphs_over_firmware_edge_capacity');
 }
 
+function test_explicit_axis_blocks_are_not_hidden_injected() {
+    const graph = {
+        nodes: [
+            { node_id: 'src', block_id: 'source.lis3dh', params: { sample_rate_hz: 100, resolution: 12 } },
+            { node_id: 'axis', block_id: 'representation.select_axis', params: { axis: 'z' } },
+            { node_id: 'lp', block_id: 'pretraitement.lowpass', params: { cutoff_hz: 1, order: 1 } }
+        ],
+        connections: [
+            { source: 'src.primary', source_socket: 0, target: 'axis.source', target_socket: 0 },
+            { source: 'axis.primary', source_socket: 0, target: 'lp.source', target_socket: 0 }
+        ],
+        outputs: { cadence: 'lp.primary' }
+    };
+
+    const binary = compileGraph(graph);
+    const tlvs = parseTlvs(binary);
+    const nodeTlvs = tlvs.filter(tlv => tlv.tag === 0x01);
+    const edgeTlvs = tlvs.filter(tlv => tlv.tag === 0x02);
+
+    assert.equal(nodeTlvs.length, 3);
+    assert.deepStrictEqual(
+        nodeTlvs.map(tlv => tlv.value[0]),
+        [BLOCK_IDS['source.lis3dh'], BLOCK_IDS['representation.select_axis'], BLOCK_IDS['pretraitement.lowpass']]
+    );
+    assert.equal(edgeTlvs.length, 2);
+    console.log('  PASS: test_explicit_axis_blocks_are_not_hidden_injected');
+}
+
+function test_source_param_encoding_matches_runtime_contract() {
+    const sourceGraph = {
+        nodes: [
+            { node_id: 'src1', block_id: 'source.lis3dh', params: { sample_rate_hz: 100, resolution: 10 } },
+            { node_id: 'src2', block_id: 'source.polar', params: { axis_mask: 3 } }
+        ],
+        connections: [],
+        outputs: {}
+    };
+
+    const binary = compileGraph(sourceGraph);
+    const nodeTlvs = parseTlvs(binary).filter(tlv => tlv.tag === 0x01);
+
+    assert.deepStrictEqual(nodeTlvs[0].value, [BLOCK_IDS['source.lis3dh'], 0, 3, 100, 0, 10]);
+    assert.deepStrictEqual(nodeTlvs[1].value, [BLOCK_IDS['source.polar'], 1, 1, 3]);
+    console.log('  PASS: test_source_param_encoding_matches_runtime_contract');
+}
+
 test_minimal_pipeline();
 test_crc_integrity();
 test_named_refs_override_misleading_socket_metadata();
 test_compile_rejects_graphs_over_firmware_node_capacity();
 test_compile_rejects_graphs_over_firmware_edge_capacity();
+test_explicit_axis_blocks_are_not_hidden_injected();
+test_source_param_encoding_matches_runtime_contract();
 console.log('All compiler tests passed.');

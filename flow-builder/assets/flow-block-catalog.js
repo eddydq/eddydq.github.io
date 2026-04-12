@@ -1,4 +1,10 @@
 globalThis.FLOW_EMBEDDED_CATALOG = {
+  "system_inputs": {
+    "raw": "raw_window",
+    "series": "series",
+    "candidate": "candidate",
+    "estimate": "estimate"
+  },
   "blocks": [
     {
       "firmware_block_id": 1,
@@ -9,21 +15,25 @@ globalThis.FLOW_EMBEDDED_CATALOG = {
       "outputs": [
         {
           "name": "primary",
-          "kind": "series"
+          "kind": "raw_window"
         }
       ],
       "params": [
         {
           "name": "sample_rate_hz",
-          "type": "enum",
-          "default": "100",
-          "enum_values": ["1", "10", "25", "50", "100", "200", "400"]
+          "type": "int",
+          "default": 100,
+          "min": 1,
+          "max": 400,
+          "enum_values": []
         },
         {
-          "name": "axis",
-          "type": "enum",
-          "default": "z",
-          "enum_values": ["x", "y", "z", "magnitude"]
+          "name": "resolution",
+          "type": "int",
+          "default": 12,
+          "min": 8,
+          "max": 12,
+          "enum_values": []
         }
       ],
       "stateful": true
@@ -37,21 +47,25 @@ globalThis.FLOW_EMBEDDED_CATALOG = {
       "outputs": [
         {
           "name": "primary",
-          "kind": "series"
+          "kind": "raw_window"
         }
       ],
       "params": [
         {
           "name": "sample_rate_hz",
-          "type": "enum",
-          "default": "100",
-          "enum_values": ["4", "10", "25", "50", "100", "200", "400", "1000"]
+          "type": "int",
+          "default": 100,
+          "min": 4,
+          "max": 1000,
+          "enum_values": []
         },
         {
-          "name": "axis",
-          "type": "enum",
-          "default": "z",
-          "enum_values": ["x", "y", "z", "magnitude"]
+          "name": "resolution",
+          "type": "int",
+          "default": 16,
+          "min": 16,
+          "max": 16,
+          "enum_values": []
         }
       ],
       "stateful": true
@@ -65,28 +79,80 @@ globalThis.FLOW_EMBEDDED_CATALOG = {
       "outputs": [
         {
           "name": "primary",
+          "kind": "raw_window"
+        }
+      ],
+      "params": [
+        {
+          "name": "axis_mask",
+          "type": "int",
+          "default": 7,
+          "min": 1,
+          "max": 7,
+          "enum_values": []
+        }
+      ],
+      "stateful": true
+    },
+    {
+      "firmware_block_id": 4,
+      "block_id": "representation.select_axis",
+      "name": "Select Axis",
+      "group": "representation",
+      "inputs": [
+        {
+          "name": "source",
+          "kinds": [
+            "raw_window"
+          ],
+          "cardinality": "one"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "primary",
           "kind": "series"
         }
       ],
       "params": [
         {
-          "name": "sample_rate_hz",
-          "type": "int",
-          "default": 52,
-          "min": 52,
-          "max": 52,
-          "enum_values": []
-        },
-        {
           "name": "axis",
           "type": "enum",
           "default": "z",
-          "enum_values": ["x", "y", "z", "magnitude"]
+          "min": 0,
+          "max": 2,
+          "enum_values": [
+            "x",
+            "y",
+            "z"
+          ]
         }
       ],
-      "stateful": true
+      "stateful": false
     },
-
+    {
+      "firmware_block_id": 5,
+      "block_id": "representation.vector_magnitude",
+      "name": "Vector Magnitude",
+      "group": "representation",
+      "inputs": [
+        {
+          "name": "source",
+          "kinds": [
+            "raw_window"
+          ],
+          "cardinality": "one"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "primary",
+          "kind": "series"
+        }
+      ],
+      "params": [],
+      "stateful": false
+    },
     {
       "firmware_block_id": 6,
       "block_id": "pretraitement.hpf_gravity",
@@ -587,5 +653,4 @@ globalThis.FLOW_EMBEDDED_CATALOG = {
       "stateful": true
     }
   ]
-}
-;
+};
