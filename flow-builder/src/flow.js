@@ -19,11 +19,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    const GROUP_ORDER = ['source', 'representation', 'pretraitement', 'estimation', 'detection', 'validation', 'suivi'];
     const managedSourceApi = globalThis.FlowManagedSource;
     let catalog = null;
-    let graph = managedSourceApi && typeof managedSourceApi.ensureManagedSourceGraph === 'function'
-        ? managedSourceApi.ensureManagedSourceGraph(FlowGraph.createGraphState(loadStoredGraph()))
-        : FlowGraph.createGraphState(loadStoredGraph());
+    let graph = FlowGraph.createGraphState(loadStoredGraph());
+    let managedSourceError = null;
     let runtime = null;
     let pendingConnection = null;
     let dragState = null;
@@ -155,6 +155,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             void error;
             return new Set();
+        }
+    }
+
+    function getManagedSourcePaletteGroups() {
+        const hiddenPaletteBlockIds = managedSourceApi && typeof managedSourceApi.getHiddenPaletteBlockIds === 'function'
+            ? new Set(managedSourceApi.getHiddenPaletteBlockIds())
+            : new Set();
+        const blocks = Array.isArray(catalog && catalog.blocks) ? catalog.blocks : [];
+
+        return GROUP_ORDER
+            .map(group => ({
+                group,
+                blocks: blocks.filter(block => block.group === group && !hiddenPaletteBlockIds.has(block.block_id))
+            }))
+            .filter(group => group.blocks.length > 0);
+    }
+
+    function resolveManagedSourceGraphState(candidateGraph) {
+        if (!managedSourceApi || typeof managedSourceApi.ensureManagedSourceGraph !== 'function') {
+            return {
+                graph: candidateGraph,
+                error: null
+            };
+        }
+
+        try {
+            return {
+                graph: managedSourceApi.ensureManagedSourceGraph(candidateGraph),
+                error: null
+            };
+        } catch (error) {
+            return {
+                graph: candidateGraph,
+                error: error && error.message ? error.message : 'Managed source graph is incompatible.'
+            };
         }
     }
 
@@ -956,6 +991,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         `;
     }
 
+    function renderManagedSourceErrorBlock(message) {
+        const errorMessage = message || 'Managed source graph is incompatible.';
+
+        return `
+            <article
+                class="canvas-block system-block system-block-source"
+                data-system-node="input"
+                style="left:${getSystemNodePosition('input').x}px; top:${getSystemNodePosition('input').y}px;"
+            >
+                <div class="block-header" data-drag-kind="system" data-system-kind="input">
+                    <span>Source</span>
+                </div>
+                <div class="block-body">
+                    <div class="port-side port-side-left"></div>
+                    <div class="block-content system-block-content system-source-content">
+                        <p>${escapeHtml(`Managed source graph is incompatible: ${errorMessage}`)}</p>
+                    </div>
+                    <div class="port-side port-side-right"></div>
+                </div>
+            </article>
+        `;
+    }
+
     function renderSystemOutputBlock() {
         const position = getSystemNodePosition('output');
 
@@ -1023,6 +1081,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    function setActionButtonsDisabled(disabled) {
+        runButton.disabled = disabled;
+        if (uploadButton) {
+            uploadButton.disabled = disabled;
+        }
+    }
+
     function renderBlocks(model) {
         const nodeMarkup = model.nodeCards.map(card => {
             const block = findBlock(card.block_id) || { params: [] };
@@ -1065,6 +1130,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${renderSystemOutputBlock()}
             ${emptyState}
             ${nodeMarkup}
+        `;
+    }
+
+    function renderManagedSourceErrorState(message) {
+        blocksLayer.innerHTML = `
+            ${renderManagedSourceErrorBlock(message)}
+            ${renderSystemOutputBlock()}
         `;
     }
 
@@ -1262,18 +1334,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     function render() {
         ensureGraphUi();
 
-        const model = FlowBuilderViewModel.createBuilderViewModel({
-            catalog,
-            graph,
-            selection: {
-                activeSourcePort: pendingConnection && pendingConnection.side === 'output'
-                    ? pendingConnection.ref
-                    : null
-            }
-        });
+        const managedSourceState = resolveManagedSourceGraphState(graph);
+        graph = managedSourceState.graph;
+        managedSourceError = managedSourceState.error;
 
-        renderPalette(model);
-        renderBlocks(model);
+        if (managedSourceError) {
+            renderPalette({ paletteGroups: getManagedSourcePaletteGroups() });
+            renderManagedSourceErrorState(managedSourceError);
+            setActionButtonsDisabled(true);
+            setStatus('flow-status-error', `Managed source graph is incompatible: ${managedSourceError}`);
+        } else {
+            const model = FlowBuilderViewModel.createBuilderViewModel({
+                catalog,
+                graph,
+                selection: {
+                    activeSourcePort: pendingConnection && pendingConnection.side === 'output'
+                        ? pendingConnection.ref
+                        : null
+                }
+            });
+
+            renderPalette(model);
+            renderBlocks(model);
+            setActionButtonsDisabled(false);
+        }
+
         bindCanvasInteractions();
         updatePanels();
         updateWires();
