@@ -475,6 +475,10 @@ html {
     min-height: 120px;
 }
 
+.system-block-source {
+    min-width: 320px;
+}
+
 .block-header {
     display: flex;
     align-items: center;
@@ -611,6 +615,15 @@ html {
     align-content: center;
     color: var(--slate);
     font-size: 0.78rem;
+}
+
+.system-source-content {
+    align-content: start;
+}
+
+.system-source-fields {
+    display: grid;
+    gap: 10px;
 }
 
 .system-block-content p {

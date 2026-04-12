@@ -8,6 +8,7 @@ const cssPath = path.join(rootDir, 'flow-builder', 'flow.css');
 
 const html = fs.readFileSync(htmlPath, 'utf8');
 const css = fs.readFileSync(cssPath, 'utf8');
+const scriptSrcs = Array.from(html.matchAll(/<script\s+src="([^"]+)"><\/script>/g), match => match[1]);
 
 function assertNoMergeMarkers(source, label) {
     assert.equal(
@@ -23,7 +24,16 @@ assertNoMergeMarkers(css, 'flow-builder/flow.css');
 assert.match(html, /<link rel="stylesheet" href="\.\.\/css\/styles\.css"/);
 assert.match(html, /<script src="\.\.\/js\/script\.js"><\/script>/);
 assert.match(html, /<script src="assets\/flow-block-catalog\.js"><\/script>/);
+assert.match(html, /<script src="src\/flow-managed-source\.js"><\/script>/);
 assert.match(html, /<script src="src\/flow-replay\.js"><\/script>/);
+assert.ok(
+    scriptSrcs.indexOf('src/flow-managed-source.js') < scriptSrcs.indexOf('src/flow-builder-viewmodel.js'),
+    'flow-managed-source.js should load before the viewmodel'
+);
+assert.ok(
+    scriptSrcs.indexOf('src/flow-managed-source.js') < scriptSrcs.indexOf('src/flow.js'),
+    'flow-managed-source.js should load before flow.js'
+);
 
 assert.match(html, /class="sidebar-panel"/);
 assert.match(html, /class="sidebar-panel-content"/);

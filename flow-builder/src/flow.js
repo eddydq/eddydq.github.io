@@ -19,8 +19,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    const managedSourceApi = globalThis.FlowManagedSource;
     let catalog = null;
-    let graph = FlowGraph.createGraphState(loadStoredGraph());
+    let graph = managedSourceApi && typeof managedSourceApi.ensureManagedSourceGraph === 'function'
+        ? managedSourceApi.ensureManagedSourceGraph(FlowGraph.createGraphState(loadStoredGraph()))
+        : FlowGraph.createGraphState(loadStoredGraph());
     let runtime = null;
     let pendingConnection = null;
     let dragState = null;
@@ -866,8 +869,72 @@ document.addEventListener('DOMContentLoaded', async () => {
         `).join('');
     }
 
-    function renderSystemInputBlock() {
-        return '';
+    function renderSystemSourceField(field) {
+        const isNumeric = field && typeof field.value === 'number';
+
+        return `
+            <label class="param-field">
+                <span>${escapeHtml(field.name)}</span>
+                <select
+                    class="block-select"
+                    data-system-source-select="${escapeHtml(field.name)}"
+                    data-system-source-value-type="${isNumeric ? 'number' : 'string'}"
+                >
+                    ${(field.options || []).map(option => `
+                        <option value="${escapeHtml(option)}" ${String(field.value) === String(option) ? 'selected' : ''}>
+                            ${escapeHtml(option)}
+                        </option>
+                    `).join('')}
+                </select>
+            </label>
+        `;
+    }
+
+    function renderSystemSourceBlock(card) {
+        if (!card) {
+            return '';
+        }
+
+        const position = getSystemNodePosition('input');
+        const isConnected = graph.connections.some(connection => connection.source === card.output.ref);
+
+        return `
+            <article
+                class="canvas-block system-block system-block-source"
+                data-system-node="input"
+                style="left:${position.x}px; top:${position.y}px;"
+            >
+                <div class="block-header" data-drag-kind="system" data-system-kind="input">
+                    <span>${escapeHtml(card.title)}</span>
+                </div>
+                <div class="block-body">
+                    <div class="port-side port-side-left"></div>
+                    <div class="block-content system-block-content system-source-content">
+                        <div class="system-source-fields">
+                            ${card.fields.map(renderSystemSourceField).join('')}
+                        </div>
+                    </div>
+                    <div class="port-side port-side-right">
+                        <div class="port-group port-group-output">
+                            <div class="port-group-label">${escapeHtml(card.output.name || 'primary')}</div>
+                            <div class="ports-stack ports-stack-output">
+                                <button
+                                    type="button"
+                                    class="port port-kind-series ${isConnected ? 'is-connected' : ''}"
+                                    data-port-side="output"
+                                    data-node-id="input"
+                                    data-ref="${escapeHtml(card.output.ref)}"
+                                    data-port-name="${escapeHtml(card.output.name || 'primary')}"
+                                    data-socket-index="0"
+                                    data-kind="${escapeHtml(card.output.kind)}"
+                                    title="${escapeHtml(card.output.name || 'primary')}"
+                                ></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        `;
     }
 
     function renderSystemOutputBlock() {
@@ -975,7 +1042,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             : '';
 
         blocksLayer.innerHTML = `
-            ${renderSystemInputBlock()}
+            ${renderSystemSourceBlock(model.systemSourceCard)}
             ${renderSystemOutputBlock()}
             ${emptyState}
             ${nodeMarkup}
@@ -1051,6 +1118,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                     control.getAttribute('data-param-name'),
                     control.value
                 );
+            });
+        });
+
+        blocksLayer.querySelectorAll('[data-system-source-select]').forEach(control => {
+            control.addEventListener('change', () => {
+                if (!managedSourceApi || typeof managedSourceApi.applyManagedSourceSelection !== 'function') {
+                    return;
+                }
+
+                const fieldName = control.getAttribute('data-system-source-select');
+                const valueType = control.getAttribute('data-system-source-value-type');
+                const nextValue = valueType === 'number' ? Number(control.value) : control.value;
+
+                graph = managedSourceApi.applyManagedSourceSelection(graph, {
+                    [fieldName]: nextValue
+                });
+                markGraphDirty();
             });
         });
 

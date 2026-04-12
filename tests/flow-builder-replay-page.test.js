@@ -244,6 +244,8 @@ async function main() {
     assert.match(elements.get('cadence-chart').innerHTML, /0\.0s/i);
     assert.match(elements.get('cadence-chart').innerHTML, /1\.0s/i);
     assert.match(elements.get('cadence-chart').innerHTML, /circle/i);
+    assert.match(elements.get('blocks-layer').innerHTML, /system-block-source/);
+    assert.match(elements.get('blocks-layer').innerHTML, /system-block-output/);
     assert.match(elements.get('graph-output-list').textContent, /"cadence"/);
     assert.match(elements.get('runtime-diagnostics').textContent, /"nodes"/);
 }

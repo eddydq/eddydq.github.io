@@ -190,8 +190,28 @@ async function main() {
     );
     assert.match(
         elements.get('palette-groups').innerHTML,
-        /source\.lis3dh/,
-        'palette should render at least one catalog block'
+        /pretraitement\.hpf_gravity/,
+        'palette should render at least one visible catalog block'
+    );
+    assert.doesNotMatch(
+        elements.get('palette-groups').innerHTML,
+        /source\.lis3dh|representation\.select_axis|representation\.vector_magnitude/,
+        'managed source blocks should be hidden from the palette'
+    );
+    assert.match(
+        elements.get('blocks-layer').innerHTML,
+        /system-block-source/,
+        'the permanent Source block should render on boot'
+    );
+    assert.match(
+        elements.get('blocks-layer').innerHTML,
+        /system-block-output/,
+        'the cadence output block should still render'
+    );
+    assert.match(
+        elements.get('blocks-layer').innerHTML,
+        /data-system-source-select="sample_rate_hz"/,
+        'the Source block should expose managed-source selection controls'
     );
 }
 
