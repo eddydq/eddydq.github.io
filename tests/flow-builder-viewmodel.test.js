@@ -41,6 +41,18 @@ const graph = {
     schema_version: 2,
     nodes: [
         {
+            node_id: 'managed-source',
+            block_id: 'source.polar',
+            params: { sample_rate_hz: 52, resolution: 16 },
+            ui: { hidden: true }
+        },
+        {
+            node_id: 'axis',
+            block_id: 'representation.select_axis',
+            params: { axis: 'z' },
+            ui: { hidden: true }
+        },
+        {
             node_id: 'n1',
             block_id: 'pretraitement.hpf_gravity',
             params: { cutoff_hz: 1 },
@@ -64,6 +76,8 @@ const graph = {
         }
     ],
     connections: [
+        { source: 'managed-source.primary', source_socket: 0, target: 'axis.source', target_socket: 0 },
+        { source: 'axis.primary', source_socket: 0, target: 'n1.source', target_socket: 0 },
         { source: 'n1.primary', source_socket: 0, target: 'n2.source', target_socket: 0 },
         { source: 'n2.primary', source_socket: 0, target: 'n3.source', target_socket: 0 },
         { source: 'n2.primary', source_socket: 1, target: 'n3.source', target_socket: 2 }
@@ -77,8 +91,16 @@ const model = createBuilderViewModel({
     selection: { activeSourcePort: 'n1.primary' }
 });
 
-assert.deepStrictEqual(model.paletteGroups.map(group => group.group), ['source', 'representation', 'pretraitement', 'estimation', 'validation']);
-assert.equal(model.paletteGroups[0].blocks[0].outputs[0].kind, 'raw_window');
+assert.deepStrictEqual(model.paletteGroups.map(group => group.group), ['pretraitement', 'estimation', 'validation']);
+assert.equal(model.paletteGroups[0].blocks[0].outputs[0].kind, 'series');
+assert.deepStrictEqual(model.nodeCards.map(card => card.node_id), ['n1', 'n2', 'n3']);
+assert.equal(model.systemSourceCard.title, 'Source');
+assert.equal(model.systemSourceCard.output.ref, 'axis.primary');
+assert.equal(model.systemSourceCard.output.kind, 'series');
+assert.deepStrictEqual(
+    model.systemSourceCard.fields.find(field => field.name === 'sample_rate_hz').options,
+    [52]
+);
 assert.equal(model.nodeCards[0].outputPorts[0].slots[0].colorClass, 'port-kind-series');
 assert.equal(model.nodeCards[1].inputPorts[0].slots[0].acceptsActiveConnection, true);
 assert.deepStrictEqual(model.nodeCards[2].position, { x: 700, y: 200 });

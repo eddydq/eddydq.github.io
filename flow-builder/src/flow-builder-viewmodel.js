@@ -1,12 +1,12 @@
 (function(root, factory) {
-    const api = factory();
+    const api = factory(root);
 
     if (typeof module === 'object' && module.exports) {
         module.exports = api;
     }
 
     root.FlowBuilderViewModel = api;
-}(typeof globalThis !== 'undefined' ? globalThis : this, function() {
+}(typeof globalThis !== 'undefined' ? globalThis : this, function(root) {
     const GROUP_ORDER = ['source', 'representation', 'pretraitement', 'estimation', 'detection', 'validation', 'suivi'];
     const KIND_CLASS = {
         raw_window: 'port-kind-raw-window',
@@ -14,6 +14,22 @@
         candidate: 'port-kind-candidate',
         estimate: 'port-kind-estimate'
     };
+
+    function getManagedSourceApi() {
+        if (typeof root !== 'undefined' && root.FlowManagedSource) {
+            return root.FlowManagedSource;
+        }
+
+        if (typeof require === 'function') {
+            try {
+                return require('./flow-managed-source.js');
+            } catch (error) {
+                void error;
+            }
+        }
+
+        return null;
+    }
 
     function getBlockList(catalog) {
         return Array.isArray(catalog && catalog.blocks) ? catalog.blocks : [];
@@ -213,15 +229,27 @@
     }
 
     function createBuilderViewModel({ catalog, graph, selection }) {
+        const managedSourceApi = getManagedSourceApi();
+        const managedSourceInspection = managedSourceApi && typeof managedSourceApi.inspectManagedSourceGraph === 'function'
+            ? managedSourceApi.inspectManagedSourceGraph(graph)
+            : null;
+        const hiddenPaletteBlockIds = managedSourceApi && typeof managedSourceApi.getHiddenPaletteBlockIds === 'function'
+            ? new Set(managedSourceApi.getHiddenPaletteBlockIds())
+            : new Set();
         const blocks = getBlockList(catalog);
         const paletteGroups = GROUP_ORDER
             .map(group => ({
                 group,
-                blocks: blocks.filter(block => block.group === group)
+                blocks: blocks.filter(block => block.group === group && !hiddenPaletteBlockIds.has(block.block_id))
             }))
             .filter(group => group.blocks.length > 0);
         const blockById = getBlockById(catalog);
         const graphNodes = Array.isArray(graph && graph.nodes) ? graph.nodes : [];
+        const hiddenNodeIds = new Set(
+            managedSourceInspection && Array.isArray(managedSourceInspection.hiddenNodeIds)
+                ? managedSourceInspection.hiddenNodeIds
+                : []
+        );
         const activeSourcePort = selection && selection.activeSourcePort
             ? selection.activeSourcePort
             : null;
@@ -233,38 +261,73 @@
         const sourceConnections = indexConnectionsBySocket(graph && graph.connections, 'source', 'source_socket');
         const targetConnections = indexConnectionsBySocket(graph && graph.connections, 'target', 'target_socket');
 
-        const nodeCards = graphNodes.map((node, index) => {
-            const block = blockById.get(node.block_id) || { inputs: [], outputs: [] };
-            const inputPorts = createInputPorts({
-                graph,
-                node,
-                block,
-                activeKind,
-                targetConnections
-            });
-            const outputPorts = createOutputPorts({
-                graph,
-                node,
-                block,
-                activeSourcePort,
-                sourceConnections
+        const nodeCards = graphNodes
+            .filter(node => !hiddenNodeIds.has(node.node_id))
+            .map((node, index) => {
+                const block = blockById.get(node.block_id) || { inputs: [], outputs: [] };
+                const inputPorts = createInputPorts({
+                    graph,
+                    node,
+                    block,
+                    activeKind,
+                    targetConnections
+                });
+                const outputPorts = createOutputPorts({
+                    graph,
+                    node,
+                    block,
+                    activeSourcePort,
+                    sourceConnections
+                });
+
+                return {
+                    node_id: node.node_id,
+                    title: node.block_id,
+                    block_id: node.block_id,
+                    params: node.params || {},
+                    position: getNodePosition(node, index),
+                    inputs: inputPorts,
+                    outputs: outputPorts,
+                    inputPorts,
+                    outputPorts
+                };
             });
 
-            return {
-                node_id: node.node_id,
-                title: node.block_id,
-                block_id: node.block_id,
-                params: node.params || {},
-                position: getNodePosition(node, index),
-                inputs: inputPorts,
-                outputs: outputPorts,
-                inputPorts,
-                outputPorts
-            };
-        });
+        const systemSourceCard = managedSourceInspection
+            ? {
+                title: 'Source',
+                output: {
+                    ref: managedSourceInspection.outputRef,
+                    kind: 'series'
+                },
+                fields: [
+                    {
+                        name: 'source',
+                        value: managedSourceInspection.selection.source,
+                        options: managedSourceInspection.options.source.slice()
+                    },
+                    {
+                        name: 'sample_rate_hz',
+                        value: managedSourceInspection.selection.sample_rate_hz,
+                        options: managedSourceInspection.options.sample_rate_hz.slice()
+                    },
+                    {
+                        name: 'resolution',
+                        value: managedSourceInspection.selection.resolution,
+                        options: managedSourceInspection.options.resolution.slice()
+                    },
+                    {
+                        name: 'axis',
+                        value: managedSourceInspection.selection.axis,
+                        options: managedSourceInspection.options.axis.slice()
+                    }
+                ]
+            }
+            : null;
 
         return {
             paletteGroups,
+            systemSourceCard,
             nodeCards
         };
     }
