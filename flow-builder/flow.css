@@ -335,6 +335,15 @@ html {
     fill: var(--foam);
     stroke: var(--water);
     stroke-width: 2;
+    pointer-events: all;
+    cursor: crosshair;
+    transition: all 0.2s ease;
+}
+
+.cadence-chart .chart-point:hover {
+    r: 6;
+    fill: var(--water);
+    stroke: var(--foam);
 }
 
 .cadence-chart .chart-axis-label,

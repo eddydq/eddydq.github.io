@@ -284,7 +284,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const yMax = Math.ceil(cadenceMax + cadencePadding);
         const xTicks = buildTickValues(xMin, xMax, chartSeries.length > 2 ? 5 : Math.max(2, chartSeries.length));
         const yTicks = buildTickValues(yMin, yMax, 4);
-        const viewBox = { width: 360, height: 188 };
+        const viewBox = { width: Math.max(360, chartNode.clientWidth), height: 188 };
         const plot = {
             left: 48,
             right: 16,
@@ -329,8 +329,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const y = scaleY(point.cadence);
 
             return `
-                <circle class="chart-point" cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="3.2">
-                    <title>${escapeHtml(`${formatElapsedSeconds(point.elapsedSeconds)} | ${Math.round(point.cadence)} RPM`)}</title>
+                <circle class="chart-point" cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="4.5">
+                    <title>${escapeHtml(`${formatElapsedSeconds(point.elapsedSeconds)} | ${point.cadence} RPM`)}</title>
                 </circle>
             `;
         }).join('');
@@ -1235,6 +1235,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window.addEventListener('resize', () => {
         updateWires();
+        if (replayResult && Array.isArray(replayResult.series) && replayResult.series.length > 0) {
+            renderCadenceChart(replayResult.series);
+        }
     });
 
     runButton.addEventListener('click', async () => {
@@ -1340,7 +1343,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             sidebarDock: document.getElementById('sidebar-dock-btn'),
             consoleDock: document.getElementById('console-dock-btn'),
             updateWires() {
-                setTimeout(updateWires, 350);
+                setTimeout(() => {
+                    updateWires();
+                    if (replayResult && Array.isArray(replayResult.series) && replayResult.series.length > 0) {
+                        renderCadenceChart(replayResult.series);
+                    }
+                }, 350);
             }
         });
     }
