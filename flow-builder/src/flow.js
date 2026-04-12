@@ -144,6 +144,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         return graph.nodes.find(node => node.node_id === nodeId) || null;
     }
 
+    function getHiddenNodeIds() {
+        if (!managedSourceApi || typeof managedSourceApi.inspectManagedSourceGraph !== 'function') {
+            return new Set();
+        }
+
+        try {
+            const inspection = managedSourceApi.inspectManagedSourceGraph(graph);
+            return new Set(Array.isArray(inspection.hiddenNodeIds) ? inspection.hiddenNodeIds : []);
+        } catch (error) {
+            void error;
+            return new Set();
+        }
+    }
+
     function getCanvasBounds() {
         return {
             width: Math.max(canvas.clientWidth || 0, 640),
@@ -193,9 +207,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function getDefaultNodePosition() {
+        const hiddenNodeIds = getHiddenNodeIds();
+        const visibleNodeCount = graph.nodes.reduce((count, node) => (
+            hiddenNodeIds.has(node.node_id) ? count : count + 1
+        ), 0);
+
         return clampPosition({
-            x: 240 + (graph.nodes.length * 220),
-            y: 120 + ((graph.nodes.length % 3) * 110)
+            x: 240 + (visibleNodeCount * 220),
+            y: 120 + ((visibleNodeCount % 3) * 110)
         });
     }
 
@@ -1033,7 +1052,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
         }).join('');
 
-        const emptyState = graph.nodes.length === 0
+        const emptyState = model.nodeCards.length === 0
             ? `
                 <div class="empty-state">
                     Drag blocks into the canvas, move them around, then connect sockets manually.

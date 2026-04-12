@@ -213,6 +213,11 @@ async function main() {
         /data-system-source-select="sample_rate_hz"/,
         'the Source block should expose managed-source selection controls'
     );
+    assert.match(
+        elements.get('blocks-layer').innerHTML,
+        /Drag blocks into the canvas, move them around, then connect sockets manually\./,
+        'the empty-state hint should still render when the canvas only has hidden managed nodes'
+    );
 }
 
 main().catch(error => {
