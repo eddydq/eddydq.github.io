@@ -204,6 +204,8 @@ async function main() {
     assert.match(elements.get('blocks-layer').innerHTML, /Managed source graph/i);
     assert.match(elements.get('blocks-layer').innerHTML, /system-block-source/);
     assert.match(elements.get('blocks-layer').innerHTML, /system-block-output/);
+    assert.equal(elements.get('palette-groups').innerHTML, '');
+    assert.match(elements.get('runtime-diagnostics').textContent, /exactly one source/i);
     assert.equal(elements.get('run-sim-btn').disabled, true);
     assert.equal(elements.get('upload-pipeline-btn').disabled, true);
 }

@@ -19,7 +19,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    const GROUP_ORDER = ['source', 'representation', 'pretraitement', 'estimation', 'detection', 'validation', 'suivi'];
     const managedSourceApi = globalThis.FlowManagedSource;
     let catalog = null;
     let graph = FlowGraph.createGraphState(loadStoredGraph());
@@ -156,20 +155,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             void error;
             return new Set();
         }
-    }
-
-    function getManagedSourcePaletteGroups() {
-        const hiddenPaletteBlockIds = managedSourceApi && typeof managedSourceApi.getHiddenPaletteBlockIds === 'function'
-            ? new Set(managedSourceApi.getHiddenPaletteBlockIds())
-            : new Set();
-        const blocks = Array.isArray(catalog && catalog.blocks) ? catalog.blocks : [];
-
-        return GROUP_ORDER
-            .map(group => ({
-                group,
-                blocks: blocks.filter(block => block.group === group && !hiddenPaletteBlockIds.has(block.block_id))
-            }))
-            .filter(group => group.blocks.length > 0);
     }
 
     function resolveManagedSourceGraphState(candidateGraph) {
@@ -1317,6 +1302,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             (replayResult && replayResult.emptySeriesReason) || replayError || 'Run the replay to see cadence over time.'
         );
 
+        if (managedSourceError) {
+            outputNode.textContent = JSON.stringify(graph.outputs || {}, null, 2);
+            diagnosticsNode.textContent = JSON.stringify({ error: managedSourceError }, null, 2);
+            return;
+        }
+
         if (lastRunResult) {
             outputNode.textContent = JSON.stringify(lastRunResult.outputs, null, 2);
             diagnosticsNode.textContent = JSON.stringify(lastRunResult.diagnostics, null, 2);
@@ -1339,7 +1330,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         managedSourceError = managedSourceState.error;
 
         if (managedSourceError) {
-            renderPalette({ paletteGroups: getManagedSourcePaletteGroups() });
+            lastRunResult = null;
+            replayResult = null;
+            renderPalette({ paletteGroups: [] });
             renderManagedSourceErrorState(managedSourceError);
             setActionButtonsDisabled(true);
             setStatus('flow-status-error', `Managed source graph is incompatible: ${managedSourceError}`);
@@ -1429,6 +1422,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     runButton.addEventListener('click', async () => {
+        if (managedSourceError) {
+            lastRunResult = null;
+            replayResult = null;
+            renderCadenceChart(null);
+            diagnosticsNode.textContent = JSON.stringify({ error: managedSourceError }, null, 2);
+            setStatus('flow-run-invalid', `Managed source graph is incompatible: ${managedSourceError}`);
+            return;
+        }
+
         const errors = FlowGraph.validateGraph(graph, catalog);
 
         if (!graph.outputs[FINAL_OUTPUT_BINDING]) {
@@ -1487,6 +1489,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (uploadButton) {
         uploadButton.addEventListener('click', async () => {
+            if (managedSourceError) {
+                setUploadStatus(`Managed source graph is incompatible: ${managedSourceError}`);
+                diagnosticsNode.textContent = JSON.stringify({ error: managedSourceError }, null, 2);
+                return;
+            }
+
             const errors = FlowGraph.validateGraph(graph, catalog);
 
             if (errors.length > 0) {
